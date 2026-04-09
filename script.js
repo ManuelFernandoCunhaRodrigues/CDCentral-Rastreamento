@@ -8,6 +8,19 @@ const leadForm = document.querySelector("#lead-form");
 const submitButton = document.querySelector("#lead-submit");
 const feedbackNode = document.querySelector("#form-feedback");
 const whatsappInput = document.querySelector("#whatsapp");
+const startedAtInput = document.querySelector("#started_at");
+const fieldNodes = {
+  nome: document.querySelector("#nome"),
+  whatsapp: document.querySelector("#whatsapp"),
+  tipo: document.querySelector("#tipo"),
+  veiculos: document.querySelector("#veiculos"),
+};
+const fieldErrorNodes = {
+  nome: document.querySelector("#error-nome"),
+  whatsapp: document.querySelector("#error-whatsapp"),
+  tipo: document.querySelector("#error-tipo"),
+  veiculos: document.querySelector("#error-veiculos"),
+};
 
 const setHeaderState = () => {
   if (!header) {
@@ -47,25 +60,58 @@ const getLeadPayload = (formData) => ({
   whatsapp: String(formData.get("whatsapp") || "").trim(),
   tipo: String(formData.get("tipo") || "").trim(),
   veiculos: String(formData.get("veiculos") || "").trim(),
+  empresa: String(formData.get("empresa") || "").trim(),
+  startedAt: String(formData.get("started_at") || "").trim(),
 });
 
 const validateLeadPayload = (payload) => {
+  const errors = {};
   const digits = payload.whatsapp.replace(/\D/g, "");
   const vehiclesNumber = Number(payload.veiculos);
 
   if (payload.nome.length < 3) {
-    return "Informe um nome valido.";
+    errors.nome = "Informe seu nome completo.";
   }
   if (digits.length < 10 || digits.length > 11) {
-    return "Informe um WhatsApp valido com DDD.";
+    errors.whatsapp = "Informe um WhatsApp válido com DDD.";
   }
   if (!payload.tipo) {
-    return "Selecione o tipo de atendimento.";
+    errors.tipo = "Selecione o tipo de atendimento.";
   }
   if (!Number.isFinite(vehiclesNumber) || vehiclesNumber < 1) {
-    return "Informe a quantidade de veiculos.";
+    errors.veiculos = "Informe a quantidade de veículos.";
   }
-  return null;
+  return errors;
+};
+
+const setFieldError = (fieldName, message) => {
+  const field = fieldNodes[fieldName];
+  const errorNode = fieldErrorNodes[fieldName];
+
+  if (field) {
+    field.setAttribute("aria-invalid", "true");
+  }
+
+  if (errorNode) {
+    errorNode.textContent = message;
+  }
+};
+
+const clearFieldError = (fieldName) => {
+  const field = fieldNodes[fieldName];
+  const errorNode = fieldErrorNodes[fieldName];
+
+  if (field) {
+    field.removeAttribute("aria-invalid");
+  }
+
+  if (errorNode) {
+    errorNode.textContent = "";
+  }
+};
+
+const clearAllFieldErrors = () => {
+  Object.keys(fieldNodes).forEach(clearFieldError);
 };
 
 const setFeedback = (message, status) => {
@@ -87,6 +133,10 @@ window.addEventListener("scroll", setHeaderState, { passive: true });
 
 if (yearNode) {
   yearNode.textContent = new Date().getFullYear();
+}
+
+if (startedAtInput) {
+  startedAtInput.value = String(Date.now());
 }
 
 if (menuToggle && nav) {
@@ -111,8 +161,20 @@ if (menuToggle && nav) {
 if (whatsappInput) {
   whatsappInput.addEventListener("input", (event) => {
     event.target.value = formatWhatsapp(event.target.value);
+    clearFieldError("whatsapp");
   });
 }
+
+Object.entries(fieldNodes).forEach(([fieldName, fieldNode]) => {
+  if (!fieldNode || fieldName === "whatsapp") {
+    return;
+  }
+
+  const eventName = fieldNode.tagName === "SELECT" ? "change" : "input";
+  fieldNode.addEventListener(eventName, () => {
+    clearFieldError(fieldName);
+  });
+});
 
 if ("IntersectionObserver" in window && revealElements.length > 0) {
   const observer = new IntersectionObserver(
@@ -138,10 +200,12 @@ if ("IntersectionObserver" in window && revealElements.length > 0) {
 if (leadForm) {
   leadForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    clearAllFieldErrors();
 
     if (submitButton) {
       submitButton.disabled = true;
       submitButton.textContent = "Enviando...";
+      submitButton.setAttribute("aria-busy", "true");
     }
 
     setFeedback("", "");
@@ -150,22 +214,31 @@ if (leadForm) {
     const botField = String(formData.get("empresa") || "").trim();
 
     if (botField) {
-      setFeedback("Nao foi possivel enviar. Tente novamente.", "error");
+      setFeedback("Não foi possível enviar. Tente novamente.", "error");
       if (submitButton) {
         submitButton.disabled = false;
-        submitButton.textContent = "Receber orcamento";
+        submitButton.textContent = "Receber orçamento";
+        submitButton.removeAttribute("aria-busy");
       }
       return;
     }
 
     const payload = getLeadPayload(formData);
-    const validationError = validateLeadPayload(payload);
+    const validationErrors = validateLeadPayload(payload);
 
-    if (validationError) {
-      setFeedback(validationError, "error");
+    if (Object.keys(validationErrors).length > 0) {
+      Object.entries(validationErrors).forEach(([fieldName, message]) => {
+        setFieldError(fieldName, message);
+      });
+      setFeedback("Revise os campos destacados e tente novamente.", "error");
+      const firstInvalidField = fieldNodes[Object.keys(validationErrors)[0]];
+      if (firstInvalidField) {
+        firstInvalidField.focus();
+      }
       if (submitButton) {
         submitButton.disabled = false;
-        submitButton.textContent = "Receber orcamento";
+        submitButton.textContent = "Receber orçamento";
+        submitButton.removeAttribute("aria-busy");
       }
       return;
     }
@@ -181,20 +254,27 @@ if (leadForm) {
 
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(result.message || "Falha ao enviar formulario.");
+        throw new Error(result.message || "Não foi possível enviar o formulário.");
       }
 
-      setFeedback("Mensagem enviada com sucesso. Em breve vamos falar com voce.", "success");
+      setFeedback("Solicitação enviada com sucesso. Nossa equipe vai falar com você em breve.", "success");
       leadForm.reset();
       if (whatsappInput) {
         whatsappInput.value = "";
       }
+      if (startedAtInput) {
+        startedAtInput.value = String(Date.now());
+      }
     } catch (error) {
-      setFeedback(error.message || "Falha ao enviar. Tente novamente em instantes.", "error");
+      setFeedback(
+        error.message || "Não foi possível enviar agora. Tente novamente em instantes.",
+        "error"
+      );
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
-        submitButton.textContent = "Receber orcamento";
+        submitButton.textContent = "Receber orçamento";
+        submitButton.removeAttribute("aria-busy");
       }
     }
   });

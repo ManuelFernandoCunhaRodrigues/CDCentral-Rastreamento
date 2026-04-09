@@ -613,9 +613,20 @@ a:focus-visible {
   font-size: 0.94rem;
 }
 
+.contact__note {
+  margin-top: 1rem;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
 .lead-form {
   display: grid;
   gap: 0.62rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.4rem;
 }
 
 .lead-form label {
@@ -640,6 +651,12 @@ a:focus-visible {
   color: rgba(255, 248, 241, 0.48);
 }
 
+.lead-form input[aria-invalid="true"],
+.lead-form select[aria-invalid="true"] {
+  border-color: rgba(255, 92, 92, 0.72);
+  box-shadow: 0 0 0 4px rgba(255, 92, 92, 0.12);
+}
+
 .lead-form .btn {
   margin-top: 0.35rem;
 }
@@ -655,17 +672,36 @@ a:focus-visible {
 .form-feedback {
   min-height: 1.3rem;
   margin: 0.2rem 0 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 700;
+}
+
+.form-feedback:empty {
+  display: none;
 }
 
 .form-feedback.is-success {
   color: var(--ok);
+  border-color: rgba(46, 207, 135, 0.24);
+  background: rgba(46, 207, 135, 0.08);
 }
 
 .form-feedback.is-error {
   color: var(--danger);
+  border-color: rgba(255, 92, 92, 0.24);
+  background: rgba(255, 92, 92, 0.08);
+}
+
+.field-error {
+  min-height: 1.1rem;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .final-cta__box {
