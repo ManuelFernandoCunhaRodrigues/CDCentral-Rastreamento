@@ -3,7 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const leadHandler = require("./api/leads");
 
-const root = __dirname;
+const root = path.resolve(__dirname);
+const rootBoundary = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
 const port = 4173;
 
 const types = {
@@ -16,6 +17,9 @@ const types = {
   ".svg": "image/svg+xml",
   ".webp": "image/webp",
   ".ico": "image/x-icon",
+  ".json": "application/json; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
 };
 
 const loadEnvFile = (filename) => {
@@ -49,7 +53,15 @@ loadEnvFile(".env.local");
 
 http
   .createServer((req, res) => {
-    const rawPath = decodeURIComponent((req.url || "/").split("?")[0]);
+    let rawPath = "/";
+
+    try {
+      rawPath = decodeURIComponent((req.url || "/").split("?")[0]);
+    } catch (error) {
+      res.writeHead(400);
+      res.end("Bad request");
+      return;
+    }
 
     if (rawPath === "/api/leads") {
       Promise.resolve(leadHandler(req, res)).catch((error) => {
@@ -66,9 +78,10 @@ http
     }
 
     const requestedPath = rawPath === "/" ? "/index.html" : rawPath;
-    const filePath = path.normalize(path.join(root, requestedPath));
+    const relativePath = requestedPath.replace(/^[/\\]+/, "");
+    const filePath = path.resolve(root, relativePath);
 
-    if (!filePath.startsWith(root)) {
+    if (!filePath.toLowerCase().startsWith(rootBoundary.toLowerCase())) {
       res.writeHead(403);
       res.end("Forbidden");
       return;

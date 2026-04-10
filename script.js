@@ -9,13 +9,20 @@ const submitButton = document.querySelector("#lead-submit");
 const feedbackNode = document.querySelector("#form-feedback");
 const whatsappInput = document.querySelector("#whatsapp");
 const startedAtInput = document.querySelector("#started_at");
+
 const DESKTOP_NAV_BREAKPOINT = 980;
+const SUBMIT_TIMEOUT_MS = 10000;
+const SUBMIT_IDLE_TEXT = "Receber orçamento";
+const SUBMIT_LOADING_TEXT = "Enviando...";
+const GENERIC_SUBMIT_ERROR = "Não foi possível enviar agora. Tente novamente em instantes.";
+
 const fieldNodes = {
   nome: document.querySelector("#nome"),
   whatsapp: document.querySelector("#whatsapp"),
   tipo: document.querySelector("#tipo"),
   veiculos: document.querySelector("#veiculos"),
 };
+
 const fieldErrorNodes = {
   nome: document.querySelector("#error-nome"),
   whatsapp: document.querySelector("#error-whatsapp"),
@@ -23,11 +30,17 @@ const fieldErrorNodes = {
   veiculos: document.querySelector("#error-veiculos"),
 };
 
+const fieldMessages = {
+  nome: "Informe seu nome completo.",
+  whatsapp: "Informe um WhatsApp válido com DDD.",
+  tipo: "Selecione o tipo de atendimento.",
+  veiculos: "Informe uma quantidade entre 1 e 9999 veículos.",
+};
+
 const setHeaderState = () => {
-  if (!header) {
-    return;
+  if (header) {
+    header.classList.toggle("is-scrolled", window.scrollY > 10);
   }
-  header.classList.toggle("is-scrolled", window.scrollY > 10);
 };
 
 const closeMenu = () => {
@@ -71,17 +84,18 @@ const validateLeadPayload = (payload) => {
   const vehiclesNumber = Number(payload.veiculos);
 
   if (payload.nome.length < 3) {
-    errors.nome = "Informe seu nome completo.";
+    errors.nome = fieldMessages.nome;
   }
   if (digits.length < 10 || digits.length > 11) {
-    errors.whatsapp = "Informe um WhatsApp válido com DDD.";
+    errors.whatsapp = fieldMessages.whatsapp;
   }
   if (!payload.tipo) {
-    errors.tipo = "Selecione o tipo de atendimento.";
+    errors.tipo = fieldMessages.tipo;
   }
-  if (!Number.isFinite(vehiclesNumber) || vehiclesNumber < 1) {
-    errors.veiculos = "Informe a quantidade de veículos.";
+  if (!Number.isInteger(vehiclesNumber) || vehiclesNumber < 1 || vehiclesNumber > 9999) {
+    errors.veiculos = fieldMessages.veiculos;
   }
+
   return errors;
 };
 
@@ -119,13 +133,153 @@ const setFeedback = (message, status) => {
   if (!feedbackNode) {
     return;
   }
+
   feedbackNode.textContent = message;
   feedbackNode.classList.remove("is-success", "is-error");
+
   if (status === "success") {
     feedbackNode.classList.add("is-success");
   }
+
   if (status === "error") {
     feedbackNode.classList.add("is-error");
+  }
+};
+
+const setSubmitLoading = (isLoading) => {
+  if (!submitButton) {
+    return;
+  }
+
+  submitButton.disabled = isLoading;
+  submitButton.textContent = isLoading ? SUBMIT_LOADING_TEXT : SUBMIT_IDLE_TEXT;
+
+  if (isLoading) {
+    submitButton.setAttribute("aria-busy", "true");
+  } else {
+    submitButton.removeAttribute("aria-busy");
+  }
+};
+
+const resetStartedAt = () => {
+  if (startedAtInput) {
+    startedAtInput.value = String(Date.now());
+  }
+};
+
+const getSubmitErrorMessage = (response) => {
+  if (!response) {
+    return GENERIC_SUBMIT_ERROR;
+  }
+
+  if (response.status === 413) {
+    return "Os dados enviados ficaram grandes demais. Revise o formulário e tente novamente.";
+  }
+
+  if (response.status === 415) {
+    return "Não foi possível processar o envio. Atualize a página e tente novamente.";
+  }
+
+  if (response.status === 422) {
+    return "Revise os campos destacados e tente novamente.";
+  }
+
+  if (response.status === 429) {
+    return "Muitas tentativas em sequência. Aguarde um instante e tente novamente.";
+  }
+
+  return GENERIC_SUBMIT_ERROR;
+};
+
+const fetchWithTimeout = async (url, options) => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+};
+
+const applyServerFieldErrors = (fields) => {
+  if (!Array.isArray(fields)) {
+    return;
+  }
+
+  fields.forEach((fieldName) => {
+    if (fieldMessages[fieldName]) {
+      setFieldError(fieldName, fieldMessages[fieldName]);
+    }
+  });
+
+  const firstInvalidField = fieldNodes[fields.find((fieldName) => fieldNodes[fieldName])];
+  if (firstInvalidField) {
+    firstInvalidField.focus();
+  }
+};
+
+const handleLeadSubmit = async (event) => {
+  event.preventDefault();
+  clearAllFieldErrors();
+  setFeedback("", "");
+
+  const formData = new FormData(leadForm);
+  const payload = getLeadPayload(formData);
+
+  if (payload.empresa) {
+    setFeedback(GENERIC_SUBMIT_ERROR, "error");
+    return;
+  }
+
+  const validationErrors = validateLeadPayload(payload);
+
+  if (Object.keys(validationErrors).length > 0) {
+    Object.entries(validationErrors).forEach(([fieldName, message]) => {
+      setFieldError(fieldName, message);
+    });
+    setFeedback("Revise os campos destacados e tente novamente.", "error");
+    const firstInvalidField = fieldNodes[Object.keys(validationErrors)[0]];
+    if (firstInvalidField) {
+      firstInvalidField.focus();
+    }
+    return;
+  }
+
+  setSubmitLoading(true);
+
+  try {
+    const response = await fetchWithTimeout("/api/leads", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      applyServerFieldErrors(result.fields);
+      throw new Error(getSubmitErrorMessage(response));
+    }
+
+    setFeedback("Solicitação enviada com sucesso. Nossa equipe vai falar com você em breve.", "success");
+    leadForm.reset();
+    if (whatsappInput) {
+      whatsappInput.value = "";
+    }
+    resetStartedAt();
+  } catch (error) {
+    const isAbortError = error && error.name === "AbortError";
+    setFeedback(
+      isAbortError ? "O envio demorou mais que o esperado. Verifique sua conexão e tente novamente." : error.message || GENERIC_SUBMIT_ERROR,
+      "error"
+    );
+  } finally {
+    setSubmitLoading(false);
   }
 };
 
@@ -136,9 +290,7 @@ if (yearNode) {
   yearNode.textContent = new Date().getFullYear();
 }
 
-if (startedAtInput) {
-  startedAtInput.value = String(Date.now());
-}
+resetStartedAt();
 
 if (menuToggle && nav) {
   menuToggle.addEventListener("click", () => {
@@ -147,9 +299,7 @@ if (menuToggle && nav) {
   });
 
   nav.querySelectorAll("a").forEach((anchor) => {
-    anchor.addEventListener("click", () => {
-      closeMenu();
-    });
+    anchor.addEventListener("click", closeMenu);
   });
 
   window.addEventListener("resize", () => {
@@ -199,84 +349,5 @@ if ("IntersectionObserver" in window && revealElements.length > 0) {
 }
 
 if (leadForm) {
-  leadForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    clearAllFieldErrors();
-
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Enviando...";
-      submitButton.setAttribute("aria-busy", "true");
-    }
-
-    setFeedback("", "");
-
-    const formData = new FormData(leadForm);
-    const botField = String(formData.get("empresa") || "").trim();
-
-    if (botField) {
-      setFeedback("Não foi possível enviar. Tente novamente.", "error");
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = "Receber orçamento";
-        submitButton.removeAttribute("aria-busy");
-      }
-      return;
-    }
-
-    const payload = getLeadPayload(formData);
-    const validationErrors = validateLeadPayload(payload);
-
-    if (Object.keys(validationErrors).length > 0) {
-      Object.entries(validationErrors).forEach(([fieldName, message]) => {
-        setFieldError(fieldName, message);
-      });
-      setFeedback("Revise os campos destacados e tente novamente.", "error");
-      const firstInvalidField = fieldNodes[Object.keys(validationErrors)[0]];
-      if (firstInvalidField) {
-        firstInvalidField.focus();
-      }
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = "Receber orçamento";
-        submitButton.removeAttribute("aria-busy");
-      }
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(result.message || "Não foi possível enviar o formulário.");
-      }
-
-      setFeedback("Solicitação enviada com sucesso. Nossa equipe vai falar com você em breve.", "success");
-      leadForm.reset();
-      if (whatsappInput) {
-        whatsappInput.value = "";
-      }
-      if (startedAtInput) {
-        startedAtInput.value = String(Date.now());
-      }
-    } catch (error) {
-      setFeedback(
-        error.message || "Não foi possível enviar agora. Tente novamente em instantes.",
-        "error"
-      );
-    } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = "Receber orçamento";
-        submitButton.removeAttribute("aria-busy");
-      }
-    }
-  });
+  leadForm.addEventListener("submit", handleLeadSubmit);
 }

@@ -147,7 +147,7 @@ svg {
   font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   overflow-wrap: anywhere;
 }
 
@@ -228,7 +228,7 @@ svg {
   color: var(--amber-soft);
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -256,13 +256,13 @@ svg {
 .contact h2,
 .final-cta h2 {
   font-family: "Sora", sans-serif;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1.03;
 }
 
 .hero h1 {
   margin: 1rem 0 0.9rem;
-  font-size: clamp(2rem, 10vw, 3rem);
+  font-size: 2.75rem;
 }
 
 .hero p {
@@ -292,6 +292,8 @@ svg {
   font-weight: 800;
   font-size: 0.96rem;
   line-height: 1.25;
+  cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
   box-shadow: 0 14px 30px rgba(255, 122, 0, 0.26);
 }
@@ -300,6 +302,10 @@ svg {
 .btn:focus-visible {
   transform: translateY(-2px);
   box-shadow: 0 18px 34px rgba(255, 122, 0, 0.3);
+}
+
+.btn:active {
+  transform: translateY(0);
 }
 
 .btn:disabled {
@@ -471,7 +477,7 @@ a:focus-visible {
 
 .section__heading h2 {
   margin: 0.9rem 0 0.8rem;
-  font-size: clamp(1.7rem, 7vw, 2.5rem);
+  font-size: 2.35rem;
 }
 
 .section__heading p {
@@ -596,7 +602,7 @@ a:focus-visible {
 
 .contact__content h2 {
   margin: 0.9rem 0 0.8rem;
-  font-size: clamp(1.65rem, 7vw, 2.2rem);
+  font-size: 2.1rem;
 }
 
 .contact__content p {
@@ -722,7 +728,7 @@ a:focus-visible {
 
 .final-cta h2 {
   margin: 0.85rem 0 0;
-  font-size: clamp(1.6rem, 6.5vw, 2.3rem);
+  font-size: 2.2rem;
 }
 
 .footer {
@@ -745,6 +751,10 @@ a:focus-visible {
   min-width: 0;
 }
 
+.footer__brand {
+  justify-self: start;
+}
+
 .footer__grid strong {
   display: block;
   margin-bottom: 0.65rem;
@@ -753,7 +763,8 @@ a:focus-visible {
 
 .footer__logo {
   width: min(14rem, 100%);
-  margin-bottom: 0.9rem;
+  height: auto;
+  margin: 0 0 1.4rem;
 }
 
 .footer__grid p,
@@ -860,12 +871,12 @@ a:focus-visible {
 .legal-card h1,
 .legal-card h2 {
   font-family: "Sora", sans-serif;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .legal-card h1 {
   margin: 1rem 0;
-  font-size: clamp(2rem, 8vw, 3rem);
+  font-size: 2.65rem;
 }
 
 .legal-card h2 {
@@ -932,6 +943,26 @@ a:focus-visible {
   .brand span {
     max-width: 11ch;
     font-size: 0.82rem;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .section__heading h2 {
+    font-size: 1.72rem;
+  }
+
+  .contact__content h2 {
+    font-size: 1.65rem;
+  }
+
+  .final-cta h2 {
+    font-size: 1.6rem;
+  }
+
+  .legal-card h1 {
+    font-size: 2rem;
   }
 
   .hero {
@@ -1061,7 +1092,7 @@ a:focus-visible {
   }
 
   .hero h1 {
-    font-size: clamp(2.6rem, 5vw, 4.4rem);
+    font-size: 4.2rem;
     max-width: 12ch;
   }
 

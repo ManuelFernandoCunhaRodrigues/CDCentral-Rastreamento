@@ -1,10 +1,19 @@
 "use strict";
 
 const { normalizeLead, validateLead, saveLeadToSupabase } = require("../lib/leads-service");
+const { HttpError, createRateLimiter, readJsonBody } = require("../lib/http-utils");
+
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
-const GENERIC_ERROR_MESSAGE = "Não foi possível enviar sua solicitação agora. Tente novamente em instantes.";
-const requestStore = new Map();
+const MIN_FORM_FILL_TIME_MS = 1500;
+const MAX_FORM_AGE_MS = 2 * 60 * 60 * 1000;
+const MAX_BODY_BYTES = 16 * 1024;
+const GENERIC_ERROR_MESSAGE = "Nao foi possivel enviar sua solicitacao agora. Tente novamente em instantes.";
+
+const isLeadRateLimited = createRateLimiter({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  maxRequests: RATE_LIMIT_MAX_REQUESTS,
+});
 
 const getAllowedOrigin = (req) => {
   const origin = String(req.headers.origin || "");
@@ -48,15 +57,6 @@ const getClientIp = (req) => {
   return String(req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown");
 };
 
-const isRateLimited = (req) => {
-  const now = Date.now();
-  const key = getClientIp(req);
-  const attempts = (requestStore.get(key) || []).filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
-  attempts.push(now);
-  requestStore.set(key, attempts);
-  return attempts.length > RATE_LIMIT_MAX_REQUESTS;
-};
-
 const sendJson = (req, res, statusCode, payload) => {
   const allowedOrigin = getAllowedOrigin(req);
   res.statusCode = statusCode;
@@ -78,40 +78,11 @@ const sendJson = (req, res, statusCode, payload) => {
   res.end(JSON.stringify(payload));
 };
 
-const readRequestBody = async (req) => {
-  if (req.body && typeof req.body === "object") {
-    return req.body;
-  }
+const isSuspiciousFormTiming = (startedAt) => {
+  const timestamp = Number(startedAt || 0);
+  const elapsed = Date.now() - timestamp;
 
-  if (typeof req.body === "string") {
-    return req.body ? JSON.parse(req.body) : {};
-  }
-
-  return new Promise((resolve, reject) => {
-    let rawBody = "";
-
-    req.on("data", (chunk) => {
-      rawBody += chunk;
-      if (rawBody.length > 1_000_000) {
-        reject(new Error("Payload excedeu o limite permitido."));
-      }
-    });
-
-    req.on("end", () => {
-      if (!rawBody) {
-        resolve({});
-        return;
-      }
-
-      try {
-        resolve(JSON.parse(rawBody));
-      } catch (error) {
-        reject(new Error("JSON invalido no corpo da requisicao."));
-      }
-    });
-
-    req.on("error", reject);
-  });
+  return !Number.isFinite(timestamp) || timestamp <= 0 || elapsed < MIN_FORM_FILL_TIME_MS || elapsed > MAX_FORM_AGE_MS;
 };
 
 module.exports = async (req, res) => {
@@ -130,22 +101,21 @@ module.exports = async (req, res) => {
 
   if (req.method !== "POST") {
     sendJson(req, res, 405, {
-      message: "Método não permitido.",
+      message: "Metodo nao permitido.",
     });
     return;
   }
 
   try {
-    if (isRateLimited(req)) {
+    if (isLeadRateLimited(getClientIp(req))) {
       sendJson(req, res, 429, {
-        message: "Muitas tentativas em sequência. Aguarde um instante e tente novamente.",
+        message: "Muitas tentativas em sequencia. Aguarde um instante e tente novamente.",
       });
       return;
     }
 
-    const body = await readRequestBody(req);
+    const body = await readJsonBody(req, { limitBytes: MAX_BODY_BYTES });
     const honeypot = String(body.empresa || "").trim();
-    const startedAt = Number(body.startedAt || 0);
 
     if (honeypot) {
       sendJson(req, res, 400, {
@@ -154,7 +124,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (startedAt && Date.now() - startedAt < 1500) {
+    if (isSuspiciousFormTiming(body.startedAt)) {
       sendJson(req, res, 400, {
         message: GENERIC_ERROR_MESSAGE,
       });
@@ -166,7 +136,7 @@ module.exports = async (req, res) => {
 
     if (!validation.valid) {
       sendJson(req, res, 422, {
-        message: "Preencha nome, WhatsApp, tipo e quantidade de veículos corretamente.",
+        message: "Preencha nome, WhatsApp, tipo e quantidade de veiculos corretamente.",
         fields: validation.errors,
       });
       return;
@@ -178,6 +148,13 @@ module.exports = async (req, res) => {
       message: "Lead recebido com sucesso.",
     });
   } catch (error) {
+    if (error instanceof HttpError) {
+      sendJson(req, res, error.statusCode, {
+        message: error.statusCode >= 500 ? GENERIC_ERROR_MESSAGE : error.message,
+      });
+      return;
+    }
+
     console.error("Lead API error:", error);
     sendJson(req, res, 500, {
       message: GENERIC_ERROR_MESSAGE,

@@ -32,13 +32,16 @@ O site foi pensado para:
 |-- politica-de-privacidade.html
 |-- termos-de-uso.html
 |-- serve-local.js
+|-- robots.txt
+|-- sitemap.xml
+|-- vercel.json
 |-- api/
 |   `-- leads.js
 |-- lib/
+|   |-- http-utils.js
 |   `-- leads-service.js
 |-- supabase/
 |   `-- leads-schema.sql
-|-- assets/
 |-- CD CENTRAL IMG/
 `-- .env.example
 ```
@@ -59,14 +62,23 @@ O site foi pensado para:
 - [serve-local.js](./serve-local.js)
   Servidor local simples para desenvolvimento. Serve os arquivos estáticos e encaminha `/api/leads` para o handler da API.
 
+- [vercel.json](./vercel.json)
+  Configuração mínima de produção para headers de segurança, cache de imagens e cache desativado em API.
+
+- [robots.txt](./robots.txt) e [sitemap.xml](./sitemap.xml)
+  Arquivos de SEO técnico. Antes de publicar, confirme se o domínio configurado está correto.
+
 - [api/leads.js](./api/leads.js)
   Endpoint responsável por validar requisições, aplicar CORS, limitar tentativas e persistir o lead.
+
+- [lib/http-utils.js](./lib/http-utils.js)
+  Utilitários de parsing JSON, erro HTTP controlado e rate limit em memória para o endpoint.
 
 - [lib/leads-service.js](./lib/leads-service.js)
   Regras de normalização, validação e envio dos dados para o Supabase.
 
 - [supabase/leads-schema.sql](./supabase/leads-schema.sql)
-  Estrutura esperada da tabela de leads.
+  Estrutura esperada da tabela de leads, com RLS ativado e constraints básicas de qualidade dos dados.
 
 ## Seções da landing page
 
@@ -150,6 +162,8 @@ O backend também reconhece campos auxiliares de proteção quando presentes:
 - `empresa`
 - `startedAt`
 
+No fluxo do site, `startedAt` é enviado pelo formulário e usado como sinal anti-spam. Chamadas diretas à API sem esse campo recebem erro genérico.
+
 ### Regras de validação
 
 No frontend e backend, o lead precisa ter:
@@ -167,6 +181,11 @@ O endpoint possui proteções simples contra abuso:
 - limite de tentativas por IP;
 - campo honeypot `empresa`;
 - verificação de tempo mínimo de preenchimento via `startedAt`.
+- limite de tamanho do payload JSON;
+- rejeição de content types inesperados;
+- timeout na chamada ao Supabase.
+
+Observação importante: o rate limit atual é em memória e funciona como proteção básica. Em ambiente serverless, ele não é compartilhado entre instâncias. Para tráfego maior ou risco real de abuso, use uma proteção externa, como Vercel Firewall, Upstash Redis, Edge Config/KV ou um serviço equivalente.
 
 ## Fluxo da API
 
@@ -175,6 +194,20 @@ O endpoint possui proteções simples contra abuso:
 3. [api/leads.js](./api/leads.js) valida método, origem, payload e limite de requisições.
 4. [lib/leads-service.js](./lib/leads-service.js) normaliza os dados e envia para o Supabase.
 5. O frontend mostra retorno de sucesso ou erro ao usuário.
+
+## Notificações e e-mail
+
+O projeto atual não possui integração com Resend, SMTP ou outro serviço de notificação. A API apenas grava o lead no Supabase. Se for necessário enviar e-mail ou WhatsApp operacional a cada lead, implemente esse disparo no backend ou em uma função controlada por evento do banco, nunca diretamente no frontend.
+
+Fluxo recomendado:
+
+```text
+lead gravado no Supabase
+-> trigger ou job backend
+-> função segura com env vars server-side
+-> provedor de e-mail/notificação
+-> log controlado de sucesso/falha
+```
 
 ## Variáveis de ambiente
 
@@ -237,8 +270,13 @@ Pontos importantes na publicação:
 
 - configurar corretamente as variáveis de ambiente;
 - garantir que o domínio final esteja em `SITE_URL`;
+- revisar `robots.txt`, `sitemap.xml` e os metadados canônicos se o domínio final não for `https://cdcentralrastreamento.com.br`;
 - liberar previews e ambientes auxiliares em `ALLOWED_ORIGINS`;
 - validar se a tabela do Supabase existe e aceita os campos esperados.
+
+## Limite conhecido
+
+Este projeto atualmente é uma landing page de captação de leads. Ele ainda não implementa uma consulta real de código de rastreamento com status e histórico. Para adicionar esse fluxo com segurança, primeiro é necessário definir a fonte dos dados de rastreamento: API externa, tabela no Supabase, painel administrativo ou outro sistema operacional.
 
 ## Checklist antes de publicar mudanças
 
@@ -272,10 +310,6 @@ O fundo é composto por:
 
 - gradientes aplicados no `body`;
 - elementos `.site-bg`, `.orb--left`, `.orb--right` e `.scan-lines` em [styles.css](./styles.css).
-
-Também existe um PNG exportado do fundo em:
-
-- [assets/background-cdcentral.png](./assets/background-cdcentral.png)
 
 ## Observações
 
