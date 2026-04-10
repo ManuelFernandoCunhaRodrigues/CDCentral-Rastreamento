@@ -148,6 +148,7 @@ svg {
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .menu-toggle {
@@ -183,6 +184,8 @@ svg {
   border-radius: 1rem;
   background: rgba(11, 11, 11, 0.96);
   box-shadow: var(--shadow);
+  max-height: calc(100vh - 6.8rem);
+  overflow-y: auto;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-0.6rem);
@@ -285,8 +288,10 @@ svg {
   border: 1px solid transparent;
   background: linear-gradient(135deg, var(--primary), var(--amber));
   color: #1f1200;
+  text-align: center;
   font-weight: 800;
   font-size: 0.96rem;
+  line-height: 1.25;
   transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
   box-shadow: 0 14px 30px rgba(255, 122, 0, 0.26);
 }
@@ -611,6 +616,7 @@ a:focus-visible {
   color: var(--amber-soft);
   font-weight: 700;
   font-size: 0.94rem;
+  overflow-wrap: anywhere;
 }
 
 .contact__note {
@@ -732,6 +738,13 @@ a:focus-visible {
   padding: 1.8rem 0;
 }
 
+.footer__grid > div,
+.contact__content,
+.lead-form,
+.final-cta__box > div {
+  min-width: 0;
+}
+
 .footer__grid strong {
   display: block;
   margin-bottom: 0.65rem;
@@ -748,6 +761,7 @@ a:focus-visible {
   margin: 0;
   color: var(--muted);
   line-height: 1.75;
+  overflow-wrap: anywhere;
 }
 
 .footer__grid a {
@@ -756,7 +770,7 @@ a:focus-visible {
 
 .footer__contact-link {
   display: flex !important;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.7rem;
 }
 
@@ -764,6 +778,7 @@ a:focus-visible {
   flex: 0 0 1.15rem;
   width: 1.15rem;
   height: 1.15rem;
+  margin-top: 0.18rem;
   color: var(--amber-soft);
 }
 
@@ -896,7 +911,102 @@ a:focus-visible {
   }
 }
 
-@media (min-width: 760px) {
+@media (max-width: 479px) {
+  .section {
+    padding: 4.4rem 0;
+  }
+
+  .header {
+    padding: 0.55rem 0;
+  }
+
+  .header__inner {
+    min-height: 3.7rem;
+    padding: 0.65rem 0.7rem;
+  }
+
+  .brand {
+    max-width: calc(100% - 4rem);
+  }
+
+  .brand span {
+    max-width: 11ch;
+    font-size: 0.82rem;
+  }
+
+  .hero {
+    padding-top: 6.9rem;
+  }
+
+  .hero__actions .btn,
+  .final-cta .btn {
+    width: 100%;
+  }
+
+  .hero__tags li {
+    font-size: 0.78rem;
+  }
+
+  .radar-card,
+  .panel,
+  .benefit-card,
+  .steps li,
+  .final-cta__box,
+  .legal-card {
+    padding: 1rem;
+  }
+
+  .radar-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .radar {
+    min-height: 14rem;
+    background-size: 24px 24px;
+  }
+
+  .contact__quick a,
+  .footer__grid a {
+    line-height: 1.55;
+  }
+
+  .floating-whatsapp {
+    right: 0.65rem;
+    bottom: 0.65rem;
+    padding-inline: 0.45rem 0.6rem;
+  }
+
+  .floating-whatsapp__icon {
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+}
+
+@media (min-width: 560px) {
+  .hero__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .benefits-grid,
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .final-cta__box {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (min-width: 680px) {
+  .solutions-grid,
+  .footer__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 980px) {
   .header__inner {
     border-radius: 999px;
     padding: 0.8rem 1rem;

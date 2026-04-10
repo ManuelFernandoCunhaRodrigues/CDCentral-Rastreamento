@@ -9,6 +9,7 @@ const submitButton = document.querySelector("#lead-submit");
 const feedbackNode = document.querySelector("#form-feedback");
 const whatsappInput = document.querySelector("#whatsapp");
 const startedAtInput = document.querySelector("#started_at");
+const DESKTOP_NAV_BREAKPOINT = 980;
 const fieldNodes = {
   nome: document.querySelector("#nome"),
   whatsapp: document.querySelector("#whatsapp"),
@@ -152,7 +153,7 @@ if (menuToggle && nav) {
   });
 
   window.addEventListener("resize", () => {
-    if (window.innerWidth >= 760) {
+    if (window.innerWidth >= DESKTOP_NAV_BREAKPOINT) {
       closeMenu();
     }
   });
