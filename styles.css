@@ -333,6 +333,23 @@ svg {
   font-size: 0.88rem;
 }
 
+.nav .btn {
+  transform: none;
+  transition: background 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+}
+
+.nav .btn:hover,
+.nav .btn:focus-visible,
+.nav .btn:active {
+  transform: none;
+}
+
+.nav .btn:hover,
+.nav .btn:focus-visible {
+  filter: brightness(1.04);
+  box-shadow: 0 12px 24px rgba(255, 122, 0, 0.26);
+}
+
 .btn:focus-visible,
 .menu-toggle:focus-visible,
 input:focus-visible,
@@ -363,6 +380,96 @@ a:focus-visible {
 
 .hero__visual {
   position: relative;
+  isolation: isolate;
+}
+
+.app-showcase {
+  position: relative;
+  min-height: 23rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-xl);
+  background: #050505;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.app-showcase::before,
+.app-showcase::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.app-showcase::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(5, 5, 5, 0.42), transparent 42%),
+    linear-gradient(180deg, transparent 48%, rgba(5, 5, 5, 0.88));
+  z-index: 1;
+}
+
+.app-showcase::after {
+  left: 10%;
+  right: 10%;
+  bottom: 4.6rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 177, 74, 0.78), transparent);
+  box-shadow: 0 0 26px rgba(255, 122, 0, 0.45);
+  z-index: 2;
+}
+
+.app-showcase img {
+  width: 100%;
+  height: 100%;
+  min-height: 23rem;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.92;
+  filter: saturate(1.08) contrast(1.06);
+}
+
+.app-showcase__status,
+.app-showcase__metric {
+  position: absolute;
+  z-index: 3;
+}
+
+.app-showcase__status {
+  top: 1rem;
+  right: 1rem;
+  padding: 0.52rem 0.72rem;
+  border: 1px solid rgba(46, 207, 135, 0.32);
+  border-radius: 999px;
+  background: rgba(5, 5, 5, 0.72);
+  color: var(--ok);
+  font-size: 0.8rem;
+  font-weight: 800;
+  backdrop-filter: blur(12px);
+}
+
+.app-showcase__metric {
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.28rem;
+  max-width: 21rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.8rem;
+  background: rgba(12, 12, 12, 0.78);
+  backdrop-filter: blur(14px);
+}
+
+.app-showcase__metric strong {
+  font-family: "Sora", sans-serif;
+  font-size: 1rem;
+}
+
+.app-showcase__metric span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .radar-card {
@@ -508,7 +615,11 @@ a:focus-visible {
 }
 
 .panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 1.3rem;
+  overflow: hidden;
 }
 
 .panel h3 {
@@ -547,6 +658,64 @@ a:focus-visible {
   background:
     linear-gradient(130deg, rgba(255, 122, 0, 0.16), transparent 44%),
     var(--surface);
+}
+
+.panel--with-media .btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.panel__media {
+  position: relative;
+  margin: -0.45rem -0.45rem 1.05rem;
+  aspect-ratio: 16 / 10;
+  border-radius: 0.5rem;
+  background: #050505;
+  overflow: hidden;
+}
+
+.panel__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 36%, rgba(5, 5, 5, 0.88)),
+    linear-gradient(90deg, rgba(255, 122, 0, 0.12), transparent 46%);
+  pointer-events: none;
+}
+
+.panel__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.08) contrast(1.04);
+  transition: transform 0.45s ease;
+}
+
+.panel__media--vehicle img {
+  object-position: center 58%;
+}
+
+.panel__media--fleet img {
+  object-position: center 62%;
+}
+
+.panel__media figcaption {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 1;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.panel--with-media:hover .panel__media img,
+.panel--with-media:focus-within .panel__media img {
+  transform: scale(1.04);
 }
 
 .benefit-card {
@@ -905,6 +1074,78 @@ a:focus-visible {
   transform: none;
 }
 
+#beneficios .benefit-card[data-reveal],
+#como-funciona .steps li[data-reveal] {
+  transform: translateY(22px) scale(0.96);
+  transition:
+    opacity 0.58s ease,
+    transform 0.58s cubic-bezier(0.2, 0.82, 0.2, 1),
+    border-color 0.24s ease,
+    background 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+#beneficios .benefit-card[data-reveal].is-visible,
+#como-funciona .steps li[data-reveal].is-visible {
+  animation: section-card-reveal 0.58s cubic-bezier(0.2, 0.82, 0.2, 1) backwards;
+  animation-delay: var(--reveal-delay, 0s);
+  transform: translateY(0) scale(1);
+}
+
+#beneficios .benefit-card:nth-child(2),
+#como-funciona .steps li:nth-child(2) {
+  --reveal-delay: 0.08s;
+}
+
+#beneficios .benefit-card:nth-child(3),
+#como-funciona .steps li:nth-child(3) {
+  --reveal-delay: 0.16s;
+}
+
+#beneficios .benefit-card:nth-child(4),
+#como-funciona .steps li:nth-child(4) {
+  --reveal-delay: 0.24s;
+}
+
+#beneficios .benefit-card:nth-child(5) {
+  --reveal-delay: 0.32s;
+}
+
+#beneficios .benefit-card:nth-child(6) {
+  --reveal-delay: 0.4s;
+}
+
+#beneficios .benefit-card[data-reveal].is-visible:hover,
+#beneficios .benefit-card[data-reveal].is-visible:focus-within,
+#como-funciona .steps li[data-reveal].is-visible:hover,
+#como-funciona .steps li[data-reveal].is-visible:focus-within {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(255, 177, 74, 0.32);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+#beneficios .benefit-card__icon {
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+}
+
+#beneficios .benefit-card:hover .benefit-card__icon,
+#beneficios .benefit-card:focus-within .benefit-card__icon {
+  transform: translateY(-2px) rotate(-3deg);
+  box-shadow: 0 12px 26px rgba(255, 122, 0, 0.28);
+}
+
+@keyframes section-card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes pulse {
   0% {
     transform: translate(-50%, -50%) scale(0.68);
@@ -1063,6 +1304,46 @@ a:focus-visible {
     padding: 0.92rem;
   }
 
+  .app-showcase,
+  .app-showcase img {
+    min-height: 16rem;
+  }
+
+  .app-showcase__status {
+    top: 0.65rem;
+    right: 0.65rem;
+    padding: 0.42rem 0.58rem;
+    font-size: 0.72rem;
+  }
+
+  .app-showcase__metric {
+    left: 0.65rem;
+    right: 0.65rem;
+    bottom: 0.65rem;
+    padding: 0.7rem;
+    border-radius: 0.5rem;
+  }
+
+  .app-showcase__metric strong {
+    font-size: 0.9rem;
+  }
+
+  .app-showcase__metric span {
+    font-size: 0.78rem;
+  }
+
+  .panel__media {
+    margin: -0.28rem -0.28rem 0.9rem;
+    aspect-ratio: 4 / 3;
+  }
+
+  .panel__media figcaption {
+    left: 0.62rem;
+    right: 0.62rem;
+    bottom: 0.62rem;
+    font-size: 0.76rem;
+  }
+
   .radar-card__header {
     flex-direction: column;
     align-items: flex-start;
@@ -1152,6 +1433,11 @@ a:focus-visible {
   .hero h1 {
     font-size: 2.45rem;
     line-height: 1.06;
+  }
+
+  .app-showcase,
+  .app-showcase img {
+    min-height: 19rem;
   }
 
   .section__heading h2 {
@@ -1280,6 +1566,11 @@ a:focus-visible {
     max-width: 12ch;
   }
 
+  .app-showcase,
+  .app-showcase img {
+    min-height: 29rem;
+  }
+
   .section__heading {
     margin-bottom: 2.5rem;
   }
@@ -1289,7 +1580,7 @@ a:focus-visible {
   }
 
   .benefits-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .steps {
