@@ -483,6 +483,16 @@ a:focus-visible {
   box-shadow: var(--shadow);
 }
 
+.radar-card--hero {
+  display: flex;
+  flex-direction: column;
+  min-height: 23rem;
+}
+
+.radar-card--hero .radar {
+  flex: 1;
+}
+
 .radar-card__header {
   display: flex;
   justify-content: space-between;
@@ -716,6 +726,30 @@ a:focus-visible {
 .panel--with-media:hover .panel__media img,
 .panel--with-media:focus-within .panel__media img {
   transform: scale(1.04);
+}
+
+.steps-layout {
+  display: grid;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.steps-phone {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 18rem;
+  margin: 0;
+  overflow: visible;
+}
+
+.steps-phone img {
+  width: min(100%, 32rem);
+  height: auto;
+  min-height: 18rem;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 24px 38px rgba(0, 0, 0, 0.32));
 }
 
 .benefit-card {
@@ -1309,6 +1343,10 @@ a:focus-visible {
     min-height: 16rem;
   }
 
+  .radar-card--hero {
+    min-height: 16rem;
+  }
+
   .app-showcase__status {
     top: 0.65rem;
     right: 0.65rem;
@@ -1571,6 +1609,10 @@ a:focus-visible {
     min-height: 29rem;
   }
 
+  .radar-card--hero {
+    min-height: 29rem;
+  }
+
   .section__heading {
     margin-bottom: 2.5rem;
   }
@@ -1581,6 +1623,25 @@ a:focus-visible {
 
   .benefits-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .steps-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.72fr);
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .steps-layout .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .steps-phone {
+    min-height: 100%;
+  }
+
+  .steps-phone img {
+    max-height: 34rem;
+    min-height: 0;
   }
 
   .steps {

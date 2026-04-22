@@ -143,19 +143,21 @@
           </div>
 
           <div class="hero__visual" data-reveal>
-            <div class="app-showcase">
-              <img
-                src="./CD CENTRAL IMG/tela-cdcentral-br.png"
-                alt="Aplicativo da CDCentral com mapa de rastreamento em tempo real"
-                width="1366"
-                height="768"
-                fetchpriority="high"
-                decoding="async"
-              />
-              <span class="app-showcase__status">Central ativa</span>
-              <div class="app-showcase__metric">
-                <strong>Controle pelo app</strong>
-                <span>Rotas, alertas e localização em tempo real</span>
+            <div class="radar-card radar-card--hero" aria-label="Radar de rastreamento em tempo real">
+              <div class="radar-card__header">
+                <strong>Radar em tempo real</strong>
+                <span>Monitoramento ativo</span>
+              </div>
+              <div class="radar" aria-hidden="true">
+                <span class="radar__pulse"></span>
+                <span class="radar__pulse radar__pulse--delay"></span>
+                <span class="radar__point radar__point--one"></span>
+                <span class="radar__point radar__point--two"></span>
+                <span class="radar__vehicle"></span>
+              </div>
+              <div class="radar-card__footer">
+                <span>Localização precisa</span>
+                <span>Alertas instantâneos</span>
               </div>
             </div>
           </div>
@@ -309,7 +311,8 @@
             <h2>Processo simples para você começar rápido</h2>
           </header>
 
-          <ol class="steps">
+          <div class="steps-layout">
+            <ol class="steps">
             <li data-reveal>
               <strong>1. Fale com um especialista</strong>
               <p>Entendemos seu perfil e sua necessidade de segurança.</p>
@@ -326,7 +329,19 @@
               <strong>4. Monitoramento em tempo real</strong>
               <p>Controle pelo app com acompanhamento contínuo, alertas e suporte sempre que precisar.</p>
             </li>
-          </ol>
+            </ol>
+
+            <figure class="steps-phone" data-reveal>
+              <img
+                src="./CD CENTRAL IMG/tela-cdcentral-br-celular.png"
+                alt="Aplicativo de rastreamento veicular aberto no celular"
+                width="527"
+                height="952"
+                loading="lazy"
+                decoding="async"
+              />
+            </figure>
+          </div>
         </div>
       </section>
 
