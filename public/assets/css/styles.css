@@ -877,6 +877,11 @@ a:focus-visible {
   background: rgba(255, 92, 92, 0.08);
 }
 
+.form-feedback-action {
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
 .field-error {
   min-height: 1.1rem;
   color: var(--danger);

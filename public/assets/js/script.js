@@ -7,6 +7,7 @@ const revealElements = document.querySelectorAll("[data-reveal]");
 const leadForm = document.querySelector("#lead-form");
 const submitButton = document.querySelector("#lead-submit");
 const feedbackNode = document.querySelector("#form-feedback");
+const whatsappContactNode = document.querySelector('a[href*="wa.me/"]');
 const whatsappInput = document.querySelector("#whatsapp");
 const startedAtInput = document.querySelector("#started_at");
 const consentVersionInput = document.querySelector("#consent_version");
@@ -23,6 +24,7 @@ let turnstileWidgetId = null;
 let turnstileReady = false;
 let turnstileRequired = Boolean(turnstileNode);
 let publicConfigPromise = null;
+let feedbackActionNode = null;
 
 const fieldNodes = {
   nome: document.querySelector("#nome"),
@@ -156,6 +158,60 @@ const clearAllFieldErrors = () => {
   Object.keys(fieldNodes).forEach(clearFieldError);
 };
 
+const getFeedbackActionNode = () => {
+  if (feedbackActionNode || !feedbackNode) {
+    return feedbackActionNode;
+  }
+
+  feedbackActionNode = document.createElement("a");
+  feedbackActionNode.className = "btn btn--ghost form-feedback-action";
+  feedbackActionNode.textContent = "Continuar pelo WhatsApp";
+  feedbackActionNode.target = "_blank";
+  feedbackActionNode.rel = "noopener noreferrer";
+  feedbackActionNode.hidden = true;
+  feedbackNode.insertAdjacentElement("afterend", feedbackActionNode);
+  return feedbackActionNode;
+};
+
+const hideFeedbackAction = () => {
+  const actionNode = getFeedbackActionNode();
+  if (!actionNode) {
+    return;
+  }
+
+  actionNode.hidden = true;
+  actionNode.removeAttribute("href");
+};
+
+const showFeedbackAction = (url) => {
+  const actionNode = getFeedbackActionNode();
+  if (!actionNode || !url) {
+    return;
+  }
+
+  actionNode.href = url;
+  actionNode.hidden = false;
+};
+
+const getWhatsappFallbackUrl = (payload) => {
+  const baseUrl = String(whatsappContactNode?.getAttribute("href") || "").trim();
+  if (!baseUrl || !baseUrl.startsWith("https://wa.me/")) {
+    return "";
+  }
+
+  const message = [
+    "Ola! Tentei enviar meus dados pelo formulario do site, mas ocorreu uma falha tecnica.",
+    "",
+    `Nome: ${payload.nome}`,
+    `WhatsApp: ${payload.whatsapp}`,
+    `Tipo: ${payload.tipo}`,
+    `Veiculos: ${payload.veiculos}`,
+  ].join("\n");
+
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}text=${encodeURIComponent(message)}`;
+};
+
 const setFeedback = (message, status) => {
   if (!feedbackNode) {
     return;
@@ -170,6 +226,10 @@ const setFeedback = (message, status) => {
 
   if (status === "error") {
     feedbackNode.classList.add("is-error");
+  }
+
+  if (!message) {
+    hideFeedbackAction();
   }
 };
 
@@ -213,6 +273,10 @@ const getSubmitErrorMessage = (response) => {
 
   if (response.status === 429) {
     return "Muitas tentativas em sequência. Aguarde um instante e tente novamente.";
+  }
+
+  if (response.status >= 500) {
+    return "NÃ£o foi possÃ­vel concluir o envio agora. Se preferir, continue pelo WhatsApp.";
   }
 
   return GENERIC_SUBMIT_ERROR;
@@ -336,6 +400,7 @@ const handleLeadSubmit = async (event) => {
   event.preventDefault();
   clearAllFieldErrors();
   setFeedback("", "");
+  hideFeedbackAction();
 
   const formData = new FormData(leadForm);
   const payload = getLeadPayload(formData);
@@ -380,7 +445,11 @@ const handleLeadSubmit = async (event) => {
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
       applyServerFieldErrors(result.fields);
-      throw new Error(getSubmitErrorMessage(response));
+      const submitError = new Error(getSubmitErrorMessage(response));
+      if (response.status >= 500) {
+        submitError.fallbackUrl = getWhatsappFallbackUrl(payload);
+      }
+      throw submitError;
     }
 
     setFeedback("Solicitação enviada com sucesso. Nossa equipe vai falar com você em breve.", "success");
@@ -399,6 +468,9 @@ const handleLeadSubmit = async (event) => {
       isAbortError ? "O envio demorou mais que o esperado. Verifique sua conexão e tente novamente." : error.message || GENERIC_SUBMIT_ERROR,
       "error"
     );
+    if (error?.fallbackUrl) {
+      showFeedbackAction(error.fallbackUrl);
+    }
   } finally {
     setSubmitLoading(false);
   }

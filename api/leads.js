@@ -250,6 +250,10 @@ const logApiError = (error) => {
 };
 
 const getStorageErrorStatusCode = (error) => {
+  if (Number.isInteger(error?.statusCode) && error.statusCode >= 400) {
+    return error.statusCode;
+  }
+
   if (["missing_supabase_config", "invalid_supabase_config", "invalid_supabase_table", "unsafe_supabase_key"].includes(error?.code)) {
     return 500;
   }
