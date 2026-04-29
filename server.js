@@ -57,6 +57,7 @@ const HOST = process.env.HOST || "0.0.0.0";
 const SERVICE_NAME = "cdcentral-rastreamento";
 const GENERIC_ERROR_MESSAGE = "Nao foi possivel processar sua solicitacao agora.";
 const SHUTDOWN_TIMEOUT_MS = 10000;
+const DEFAULT_SITE_URL = "https://cd-central.vercel.app";
 
 const PUBLIC_FILES = new Set([
   "index.html",
@@ -147,10 +148,10 @@ const getClientIp = (req) => {
 
 const getSiteOrigin = () => {
   try {
-    const siteUrl = new URL(process.env.SITE_URL || "https://cdcentralrastreamento.com.br");
+    const siteUrl = new URL(process.env.SITE_URL || DEFAULT_SITE_URL);
     return `${siteUrl.protocol}//${siteUrl.host}`;
   } catch (error) {
-    return "https://cdcentralrastreamento.com.br";
+    return DEFAULT_SITE_URL;
   }
 };
 
@@ -158,7 +159,7 @@ const getCanonicalHost = () => {
   try {
     return new URL(getSiteOrigin()).host.toLowerCase();
   } catch (error) {
-    return "cdcentralrastreamento.com.br";
+    return new URL(DEFAULT_SITE_URL).host.toLowerCase();
   }
 };
 
