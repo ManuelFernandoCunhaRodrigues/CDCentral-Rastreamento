@@ -71,10 +71,24 @@ const getConfiguredOrigins = () => {
   return new Set(configuredOrigins);
 };
 
+const getRequestOrigin = (req) => {
+  const host = String(req.headers.host || "").split(",")[0].trim();
+  if (!host) {
+    return "";
+  }
+
+  const protocol = process.env.NODE_ENV === "development" ? "http:" : "https:";
+  return normalizeOrigin(`${protocol}//${host}`);
+};
+
 const getAllowedOrigin = (req) => {
   const origin = normalizeOrigin(req.headers.origin);
   if (!origin) {
     return "";
+  }
+
+  if (origin === getRequestOrigin(req)) {
+    return origin;
   }
 
   if (getConfiguredOrigins().has(origin)) {
