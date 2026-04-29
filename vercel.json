@@ -159,11 +159,11 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-UKRuDnemnn+20RnNwdwnZ3BDnAt5aFxzRWfpy8bD3wE='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-QqYk6e+dHVC7dUdY57DlNofBBgFW1GdN8NtUZ/tulT4='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; upgrade-insecure-requests"
         },
         {
           "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-UKRuDnemnn+20RnNwdwnZ3BDnAt5aFxzRWfpy8bD3wE='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; report-uri /api/csp-report; report-to default"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-QqYk6e+dHVC7dUdY57DlNofBBgFW1GdN8NtUZ/tulT4='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; report-uri /api/csp-report; report-to default"
         }
       ]
     }
