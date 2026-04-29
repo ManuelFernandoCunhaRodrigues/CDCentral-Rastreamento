@@ -1,3 +1,5 @@
+document.documentElement.classList.add("reveal-ready");
+
 const header = document.querySelector(".header");
 const menuToggle = document.querySelector(".menu-toggle");
 const nav = document.querySelector(".nav");
@@ -52,6 +54,28 @@ const setHeaderState = () => {
   if (header) {
     header.classList.toggle("is-scrolled", keepHeaderScrolled || window.scrollY > 10);
   }
+};
+
+const revealElement = (node) => {
+  node.classList.add("is-visible");
+};
+
+const revealVisibleElements = () => {
+  if (revealElements.length === 0) {
+    return;
+  }
+
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  revealElements.forEach((node) => {
+    if (node.classList.contains("is-visible")) {
+      return;
+    }
+
+    const rect = node.getBoundingClientRect();
+    if (rect.top <= viewportHeight * 0.92 && rect.bottom >= 0) {
+      revealElement(node);
+    }
+  });
 };
 
 const closeMenu = () => {
@@ -468,7 +492,7 @@ if ("IntersectionObserver" in window && revealElements.length > 0) {
         if (!entry.isIntersecting) {
           return;
         }
-        entry.target.classList.add("is-visible");
+        revealElement(entry.target);
         instance.unobserve(entry.target);
       });
     },
@@ -479,7 +503,13 @@ if ("IntersectionObserver" in window && revealElements.length > 0) {
   );
   revealElements.forEach((node) => observer.observe(node));
 } else {
-  revealElements.forEach((node) => node.classList.add("is-visible"));
+  revealElements.forEach(revealElement);
+}
+
+if (revealElements.length > 0) {
+  window.addEventListener("scroll", revealVisibleElements, { passive: true });
+  window.addEventListener("resize", revealVisibleElements);
+  revealVisibleElements();
 }
 
 if (leadForm) {

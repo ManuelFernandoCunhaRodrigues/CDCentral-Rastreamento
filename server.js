@@ -57,7 +57,7 @@ const HOST = process.env.HOST || "0.0.0.0";
 const SERVICE_NAME = "cdcentral-rastreamento";
 const GENERIC_ERROR_MESSAGE = "Nao foi possivel processar sua solicitacao agora.";
 const SHUTDOWN_TIMEOUT_MS = 10000;
-const DEFAULT_SITE_URL = "https://cd-central.vercel.app";
+const DEFAULT_SITE_URL = "https://cdcentralrastreamento.com.br";
 
 const PUBLIC_FILES = new Set([
   "index.html",

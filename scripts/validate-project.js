@@ -5,6 +5,14 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const publicRoot = path.join(root, "public");
+const vercelConfigPath = path.join(root, "vercel.json");
+const canonicalSiteUrl = "https://cdcentralrastreamento.com.br";
+const legacyPreviewUrl = "https://cd-central.vercel.app";
+
+const rootFiles = [
+  "package.json",
+  "vercel.json",
+];
 
 const jsFiles = [
   "server.js",
@@ -15,7 +23,12 @@ const jsFiles = [
   "lib/http-utils.js",
   "lib/leads-service.js",
   "public/assets/js/script.js",
+  "scripts/lib/env.js",
+  "scripts/optimize-images.js",
+  "scripts/smoke-deploy.js",
+  "scripts/smoke-supabase-lead.js",
   "scripts/update-csp-hash.js",
+  "scripts/validate-runtime-env.js",
   "scripts/validate-project.js",
 ];
 
@@ -39,10 +52,26 @@ const requiredPublicFiles = [
   "assets/images/cdcentral/LOGO DES.png",
   "assets/images/cdcentral/footer-logo.png",
   "assets/images/cdcentral/frota-img.webp",
+  "assets/images/cdcentral/frota-img-480.webp",
   "assets/images/cdcentral/frota-img.png",
   "assets/images/cdcentral/veiculo-img.webp",
+  "assets/images/cdcentral/veiculo-img-480.webp",
   "assets/images/cdcentral/veiculo-img.png",
   "assets/images/cdcentral/tela-cdcentral-br-celular.png",
+  "assets/images/cdcentral/tela-cdcentral-br-celular.webp",
+  "assets/images/cdcentral/tela-cdcentral-br-celular-320.webp",
+];
+
+const imageSizeBudgets = [
+  ["public/assets/images/cdcentral/veiculo-img.png", 220 * 1024],
+  ["public/assets/images/cdcentral/frota-img.png", 220 * 1024],
+  ["public/assets/images/cdcentral/tela-cdcentral-br-celular.png", 320 * 1024],
+  ["public/assets/images/cdcentral/veiculo-img.webp", 160 * 1024],
+  ["public/assets/images/cdcentral/veiculo-img-480.webp", 80 * 1024],
+  ["public/assets/images/cdcentral/frota-img.webp", 160 * 1024],
+  ["public/assets/images/cdcentral/frota-img-480.webp", 80 * 1024],
+  ["public/assets/images/cdcentral/tela-cdcentral-br-celular.webp", 140 * 1024],
+  ["public/assets/images/cdcentral/tela-cdcentral-br-celular-320.webp", 80 * 1024],
 ];
 
 const seoChecks = [
@@ -64,8 +93,23 @@ const ensureFile = (relativePath) => {
   }
 };
 
+rootFiles.forEach(ensureFile);
 jsFiles.forEach(ensureFile);
 requiredPublicFiles.forEach((filePath) => ensureFile(path.join("public", filePath)));
+
+imageSizeBudgets.forEach(([relativePath, maxBytes]) => {
+  const filePath = path.join(root, relativePath);
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+
+  const size = fs.statSync(filePath).size;
+  if (size > maxBytes) {
+    errors.push(
+      `${relativePath}: imagem acima do limite (${Math.round(size / 1024)}KB > ${Math.round(maxBytes / 1024)}KB)`
+    );
+  }
+});
 
 htmlFiles.forEach((relativePath) => {
   ensureFile(relativePath);
@@ -136,6 +180,80 @@ if (fs.existsSync(cssPath)) {
     if (!fs.existsSync(assetPath)) {
       errors.push(`public/assets/css/styles.css: referência local ausente (${value})`);
     }
+  }
+}
+
+const getJsonLdHashDirective = (html) => {
+  const jsonLdMatch = html.match(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  if (!jsonLdMatch) {
+    return "";
+  }
+
+  const crypto = require("crypto");
+  return `'sha256-${crypto.createHash("sha256").update(jsonLdMatch[1]).digest("base64")}'`;
+};
+
+const canonicalFiles = [
+  "public/index.html",
+  "public/politica-de-privacidade.html",
+  "public/termos-de-uso.html",
+  "public/robots.txt",
+  "public/sitemap.xml",
+  "public/.well-known/security.txt",
+];
+
+canonicalFiles.forEach((relativePath) => {
+  const filePath = path.join(root, relativePath);
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+
+  const content = fs.readFileSync(filePath, "utf8");
+  if (content.includes(legacyPreviewUrl)) {
+    errors.push(`${relativePath}: dominio canonico antigo encontrado (${legacyPreviewUrl})`);
+  }
+
+  if (!content.includes(canonicalSiteUrl)) {
+    errors.push(`${relativePath}: dominio canonico ausente (${canonicalSiteUrl})`);
+  }
+});
+
+if (fs.existsSync(vercelConfigPath)) {
+  let vercelConfig = {};
+
+  try {
+    vercelConfig = JSON.parse(fs.readFileSync(vercelConfigPath, "utf8"));
+  } catch (error) {
+    errors.push("vercel.json: JSON invalido");
+  }
+
+  (vercelConfig.rewrites || []).forEach((rewrite) => {
+    if (String(rewrite.destination || "").startsWith("/public/")) {
+      errors.push(`vercel.json: rewrite aponta para /public em vez da raiz publica (${rewrite.source})`);
+    }
+  });
+
+  const indexPath = path.join(publicRoot, "index.html");
+  if (fs.existsSync(indexPath)) {
+    const expectedHashDirective = getJsonLdHashDirective(fs.readFileSync(indexPath, "utf8"));
+    const cspHeaders = (vercelConfig.headers || [])
+      .filter((entry) => entry.source === "/(.*)")
+      .flatMap((entry) => entry.headers || [])
+      .filter((entry) => ["Content-Security-Policy", "Content-Security-Policy-Report-Only"].includes(entry.key));
+
+    if (!expectedHashDirective) {
+      errors.push("public/index.html: JSON-LD ausente para hash CSP");
+    }
+
+    if (cspHeaders.length === 0) {
+      errors.push("vercel.json: headers CSP ausentes");
+    }
+
+    cspHeaders.forEach((cspHeader) => {
+      if (expectedHashDirective && !String(cspHeader.value || "").includes(expectedHashDirective)) {
+        errors.push(`vercel.json: hash CSP do JSON-LD desatualizado (${cspHeader.key})`);
+      }
+    });
   }
 }
 

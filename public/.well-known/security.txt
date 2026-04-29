@@ -1,5 +1,5 @@
 Contact: mailto:administrativo@cdcentral.com.br
 Contact: https://wa.me/5598987577275
 Preferred-Languages: pt-BR
-Canonical: https://cd-central.vercel.app/.well-known/security.txt
+Canonical: https://cdcentralrastreamento.com.br/.well-known/security.txt
 Expires: 2027-04-28T23:59:59Z

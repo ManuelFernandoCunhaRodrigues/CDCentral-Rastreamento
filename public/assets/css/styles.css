@@ -62,6 +62,24 @@ a {
   text-decoration: none;
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.7rem;
+  background: var(--text);
+  color: var(--bg-main);
+  font-weight: 800;
+  transform: translateY(-180%);
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 img,
 svg {
   display: block;
@@ -688,6 +706,11 @@ a:focus-visible {
   filter: drop-shadow(0 24px 38px rgba(0, 0, 0, 0.32));
 }
 
+.steps-phone picture {
+  display: block;
+  width: 100%;
+}
+
 .benefit-card {
   padding: 1.2rem;
 }
@@ -1067,19 +1090,19 @@ a:focus-visible {
   padding-left: 1.2rem;
 }
 
-[data-reveal] {
+.reveal-ready [data-reveal] {
   opacity: 0;
   transform: translateY(18px);
   transition: opacity 0.55s ease, transform 0.55s ease;
 }
 
-[data-reveal].is-visible {
+.reveal-ready [data-reveal].is-visible {
   opacity: 1;
   transform: none;
 }
 
-#beneficios .benefit-card[data-reveal],
-#como-funciona .steps li[data-reveal] {
+.reveal-ready #beneficios .benefit-card[data-reveal],
+.reveal-ready #como-funciona .steps li[data-reveal] {
   transform: translateY(22px) scale(0.96);
   transition:
     opacity 0.58s ease,
@@ -1089,8 +1112,8 @@ a:focus-visible {
     box-shadow 0.24s ease;
 }
 
-#beneficios .benefit-card[data-reveal].is-visible,
-#como-funciona .steps li[data-reveal].is-visible {
+.reveal-ready #beneficios .benefit-card[data-reveal].is-visible,
+.reveal-ready #como-funciona .steps li[data-reveal].is-visible {
   animation: section-card-reveal 0.58s cubic-bezier(0.2, 0.82, 0.2, 1) backwards;
   animation-delay: var(--reveal-delay, 0s);
   transform: translateY(0) scale(1);
@@ -1119,10 +1142,10 @@ a:focus-visible {
   --reveal-delay: 0.4s;
 }
 
-#beneficios .benefit-card[data-reveal].is-visible:hover,
-#beneficios .benefit-card[data-reveal].is-visible:focus-within,
-#como-funciona .steps li[data-reveal].is-visible:hover,
-#como-funciona .steps li[data-reveal].is-visible:focus-within {
+.reveal-ready #beneficios .benefit-card[data-reveal].is-visible:hover,
+.reveal-ready #beneficios .benefit-card[data-reveal].is-visible:focus-within,
+.reveal-ready #como-funciona .steps li[data-reveal].is-visible:hover,
+.reveal-ready #como-funciona .steps li[data-reveal].is-visible:focus-within {
   transform: translateY(-4px) scale(1.01);
   border-color: rgba(255, 177, 74, 0.32);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
@@ -1728,7 +1751,7 @@ a:focus-visible {
     transition: none !important;
   }
 
-  [data-reveal] {
+  .reveal-ready [data-reveal] {
     opacity: 1;
     transform: none;
   }

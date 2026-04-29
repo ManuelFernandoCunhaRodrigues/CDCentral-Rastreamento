@@ -12,14 +12,14 @@
   <meta property="og:description"
     content="Proteja seu veículo, sua família e sua frota com rastreamento em tempo real, telemetria e suporte especializado.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://cd-central.vercel.app/">
-  <meta property="og:image" content="https://cd-central.vercel.app/assets/images/cdcentral/LOGO%20DES.png">
+  <meta property="og:url" content="https://cdcentralrastreamento.com.br/">
+  <meta property="og:image" content="https://cdcentralrastreamento.com.br/assets/images/cdcentral/LOGO%20DES.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CDCentral Rastreamento">
   <meta name="twitter:description"
     content="Monitoramento 24h, telemetria e gestão de frotas para mais segurança, controle e eficiência.">
-  <meta name="twitter:image" content="https://cd-central.vercel.app/assets/images/cdcentral/LOGO%20DES.png">
-  <link rel="canonical" href="https://cd-central.vercel.app/">
+  <meta name="twitter:image" content="https://cdcentralrastreamento.com.br/assets/images/cdcentral/LOGO%20DES.png">
+  <link rel="canonical" href="https://cdcentralrastreamento.com.br/">
   <title>CDCentral Rastreamento | Rastreamento veicular</title>
   <link rel="stylesheet" href="./assets/css/styles.css">
   <link rel="icon" href="/assets/images/cdcentral/LOGO%20DES.png" type="image/png">
@@ -30,7 +30,7 @@
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
         "name": "CDCentral Rastreamento",
-        "url": "https://cd-central.vercel.app/",
+        "url": "https://cdcentralrastreamento.com.br/",
         "telephone": "+5598987577275",
         "email": "administrativo@cdcentral.com.br",
         "sameAs": ["https://www.instagram.com/cdcentral.br"]
@@ -39,6 +39,8 @@
 </head>
 
 <body>
+  <a class="skip-link" href="#inicio">Pular para o conteúdo</a>
+
   <div class="site-bg" aria-hidden="true">
     <span class="orb orb--left"></span>
     <span class="orb orb--right"></span>
@@ -177,7 +179,9 @@
           <article class="panel panel--accent panel--with-media" data-reveal>
             <figure class="panel__media panel__media--vehicle">
               <picture>
-                <source srcset="./assets/images/cdcentral/veiculo-img.webp" type="image/webp">
+                <source
+                  srcset="./assets/images/cdcentral/veiculo-img-480.webp 480w, ./assets/images/cdcentral/veiculo-img.webp 768w"
+                  sizes="(max-width: 760px) 92vw, 33vw" type="image/webp">
                 <img src="./assets/images/cdcentral/veiculo-img.png"
                   alt="Carro protegido por rastreamento inteligente da CDCentral" width="768" height="768"
                   loading="lazy" decoding="async">
@@ -198,7 +202,9 @@
           <article class="panel panel--with-media" data-reveal>
             <figure class="panel__media panel__media--fleet">
               <picture>
-                <source srcset="./assets/images/cdcentral/frota-img.webp" type="image/webp">
+                <source
+                  srcset="./assets/images/cdcentral/frota-img-480.webp 480w, ./assets/images/cdcentral/frota-img.webp 768w"
+                  sizes="(max-width: 760px) 92vw, 33vw" type="image/webp">
                 <img src="./assets/images/cdcentral/frota-img.png"
                   alt="Frota com caminhão, van e carro monitorados por telemetria" width="768" height="768"
                   loading="lazy" decoding="async">
@@ -293,9 +299,14 @@
           </ol>
 
           <figure class="steps-phone" data-reveal>
-            <img src="./assets/images/cdcentral/tela-cdcentral-br-celular.png"
-              alt="Aplicativo de rastreamento veicular aberto no celular" width="527" height="952" loading="lazy"
-              decoding="async">
+            <picture>
+              <source
+                srcset="./assets/images/cdcentral/tela-cdcentral-br-celular-320.webp 320w, ./assets/images/cdcentral/tela-cdcentral-br-celular.webp 527w"
+                sizes="(max-width: 560px) 68vw, 32rem" type="image/webp">
+              <img src="./assets/images/cdcentral/tela-cdcentral-br-celular.png"
+                alt="Aplicativo de rastreamento veicular aberto no celular" width="527" height="952" loading="lazy"
+                decoding="async">
+            </picture>
           </figure>
         </div>
       </div>
@@ -365,7 +376,7 @@
           <input type="hidden" id="started_at" name="started_at">
           <input type="hidden" id="consent_version" name="consentVersion">
 
-          <div class="form-field form-field--turnstile">
+          <div class="form-field form-field--turnstile" hidden>
             <div class="turnstile-widget" id="turnstile-widget"></div>
           </div>
 

@@ -16,6 +16,7 @@ module.exports = {
         HOST: "127.0.0.1",
         TRUST_PROXY_HEADERS: "1",
         REQUIRE_REQUEST_ORIGIN: "1",
+        REQUIRE_EXTERNAL_RATE_LIMIT: "1",
         ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION: "0",
       },
       max_memory_restart: "300M",

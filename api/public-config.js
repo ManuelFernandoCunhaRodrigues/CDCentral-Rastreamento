@@ -22,10 +22,17 @@ module.exports = async (req, res) => {
   }
 
   const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY || "";
+  const hasTurnstileSecret = Boolean(process.env.TURNSTILE_SECRET_KEY);
+  const turnstileEnabled =
+    process.env.REQUIRE_TURNSTILE === "1"
+      ? Boolean(turnstileSiteKey)
+      : process.env.REQUIRE_TURNSTILE === "0"
+        ? false
+        : Boolean(turnstileSiteKey && hasTurnstileSecret);
 
   sendJson(res, 200, {
     consentVersion: getConsentVersion(),
-    turnstileEnabled: Boolean(turnstileSiteKey),
+    turnstileEnabled,
     turnstileSiteKey,
   });
 };

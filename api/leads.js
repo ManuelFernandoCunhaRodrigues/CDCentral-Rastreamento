@@ -15,9 +15,11 @@ const CONSENT_VERSION = getConsentVersion();
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TURNSTILE_TIMEOUT_MS = 5000;
 const GENERIC_ERROR_MESSAGE = "Nao foi possivel enviar sua solicitacao agora. Tente novamente em instantes.";
-const TRUST_PROXY_HEADERS = process.env.VERCEL === "1" || process.env.TRUST_PROXY_HEADERS === "1";
 const IS_DEPLOYED_RUNTIME = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
-const REQUIRE_EXTERNAL_RATE_LIMIT = process.env.REQUIRE_EXTERNAL_RATE_LIMIT === "1";
+const TRUST_PROXY_HEADERS = process.env.VERCEL === "1" || process.env.TRUST_PROXY_HEADERS === "1";
+const REQUIRE_EXTERNAL_RATE_LIMIT =
+  process.env.REQUIRE_EXTERNAL_RATE_LIMIT === "1" ||
+  (process.env.REQUIRE_EXTERNAL_RATE_LIMIT !== "0" && IS_DEPLOYED_RUNTIME);
 const REQUIRE_REQUEST_ORIGIN =
   process.env.REQUIRE_REQUEST_ORIGIN === "1" || (process.env.REQUIRE_REQUEST_ORIGIN !== "0" && IS_DEPLOYED_RUNTIME);
 const ALLOW_LOCAL_ORIGINS = process.env.ALLOW_LOCAL_ORIGINS === "1" || !IS_DEPLOYED_RUNTIME;
@@ -161,7 +163,7 @@ const isTurnstileRequired = () => {
     return false;
   }
 
-  return Boolean(process.env.TURNSTILE_SITE_KEY || process.env.TURNSTILE_SECRET_KEY);
+  return Boolean(process.env.TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY);
 };
 
 const getTurnstileToken = (body) => String(body["cf-turnstile-response"] || "").trim();
@@ -281,21 +283,21 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (!hasValidConsent(body)) {
-      sendJson(req, res, 422, {
-        message: "Confirme a politica de privacidade para continuar.",
-        fields: ["consent"],
-      });
-      return;
-    }
-
     const lead = normalizeLead(body);
     const validation = validateLead(lead);
+    const invalidFields = [...validation.errors];
 
-    if (!validation.valid) {
+    if (!hasValidConsent(body)) {
+      invalidFields.push("consent");
+    }
+
+    if (invalidFields.length > 0) {
       sendJson(req, res, 422, {
-        message: "Preencha nome, WhatsApp, tipo e quantidade de veiculos corretamente.",
-        fields: validation.errors,
+        message:
+          invalidFields.length === 1 && invalidFields[0] === "consent"
+            ? "Confirme a politica de privacidade para continuar."
+            : "Revise os campos destacados e tente novamente.",
+        fields: invalidFields,
       });
       return;
     }

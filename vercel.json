@@ -2,35 +2,35 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/public/index.html"
+      "destination": "/index.html"
     },
     {
       "source": "/index.html",
-      "destination": "/public/index.html"
+      "destination": "/index.html"
     },
     {
       "source": "/politica-de-privacidade.html",
-      "destination": "/public/politica-de-privacidade.html"
+      "destination": "/politica-de-privacidade.html"
     },
     {
       "source": "/termos-de-uso.html",
-      "destination": "/public/termos-de-uso.html"
+      "destination": "/termos-de-uso.html"
     },
     {
       "source": "/robots.txt",
-      "destination": "/public/robots.txt"
+      "destination": "/robots.txt"
     },
     {
       "source": "/sitemap.xml",
-      "destination": "/public/sitemap.xml"
+      "destination": "/sitemap.xml"
     },
     {
       "source": "/.well-known/:path*",
-      "destination": "/public/.well-known/:path*"
+      "destination": "/.well-known/:path*"
     },
     {
       "source": "/assets/:path*",
-      "destination": "/public/assets/:path*"
+      "destination": "/assets/:path*"
     }
   ],
   "headers": [
@@ -112,7 +112,7 @@
       "has": [
         {
           "type": "host",
-          "value": "^(?!(cdcentralrastreamento\\.com\\.br|cd-central\\.vercel\\.app)$).+$"
+          "value": "^(?!cdcentralrastreamento\\.com\\.br$).+"
         }
       ],
       "headers": [
@@ -155,15 +155,15 @@
         },
         {
           "key": "Report-To",
-          "value": "{\"group\":\"default\",\"max_age\":10886400,\"endpoints\":[{\"url\":\"https://cd-central.vercel.app/api/csp-report\"}],\"include_subdomains\":true}"
+          "value": "{\"group\":\"default\",\"max_age\":10886400,\"endpoints\":[{\"url\":\"https://cdcentralrastreamento.com.br/api/csp-report\"}],\"include_subdomains\":true}"
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-QqYk6e+dHVC7dUdY57DlNofBBgFW1GdN8NtUZ/tulT4='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-TZ5jdmbYRZLDwW2xf+PJfnRm+IUFl5+m9zbkrM0UrZE='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; upgrade-insecure-requests"
         },
         {
           "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-QqYk6e+dHVC7dUdY57DlNofBBgFW1GdN8NtUZ/tulT4='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; report-uri /api/csp-report; report-to default"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-TZ5jdmbYRZLDwW2xf+PJfnRm+IUFl5+m9zbkrM0UrZE='; script-src-attr 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; media-src 'none'; worker-src 'none'; manifest-src 'self'; report-uri /api/csp-report; report-to default"
         }
       ]
     }

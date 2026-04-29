@@ -86,6 +86,18 @@ O site foi pensado para:
 - [scripts/update-csp-hash.js](./scripts/update-csp-hash.js)
   Atualiza o hash CSP do JSON-LD inline quando o bloco estruturado em [public/index.html](./public/index.html) for editado.
 
+- [scripts/validate-runtime-env.js](./scripts/validate-runtime-env.js)
+  Confere variaveis de staging/producao sem imprimir segredos.
+
+- [scripts/smoke-supabase-lead.js](./scripts/smoke-supabase-lead.js)
+  Faz um insert real e identificado no Supabase para validar a gravacao server-side.
+
+- [scripts/smoke-deploy.js](./scripts/smoke-deploy.js)
+  Valida uma URL publicada, incluindo HTML, `/api/public-config`, Turnstile e assets otimizados.
+
+- [scripts/optimize-images.js](./scripts/optimize-images.js)
+  Gera WebPs responsivos e recomprime os PNGs de fallback.
+
 - [public/robots.txt](./public/robots.txt) e [public/sitemap.xml](./public/sitemap.xml)
   Arquivos de SEO técnico. Antes de publicar, confirme se o domínio configurado está correto.
 
@@ -93,7 +105,7 @@ O site foi pensado para:
   Endpoint responsável por validar requisições, aplicar CORS, limitar tentativas e persistir o lead.
 
 - [lib/http-utils.js](./lib/http-utils.js)
-  Utilitários de parsing JSON, erro HTTP controlado e rate limit com Redis/KV quando configurado. Sem Redis, usa fallback em memória; defina `REQUIRE_EXTERNAL_RATE_LIMIT=1` para falhar fechado em produção.
+  Utilitários de parsing JSON, erro HTTP controlado e rate limit com Redis/KV quando configurado. Em desenvolvimento usa fallback em memória; em produção, `/api/leads` exige Redis/KV por padrão, salvo opt-out explícito.
 
 - [lib/app-config.js](./lib/app-config.js)
   Configuração compartilhada do backend, incluindo a versão vigente de consentimento usada por `/api/public-config` e `/api/leads`.
@@ -211,7 +223,7 @@ O endpoint possui proteções simples contra abuso:
 - exigência de `Origin` válido em produção;
 - rate limit por IP com chave `rl:ip:<ip>` de 5 requisições a cada 10 minutos;
 - rate limit por WhatsApp com chave `rl:wpp:<digits>` de 3 requisições a cada 24 horas;
-- Redis/KV recomendado para rate limit distribuído; fallback em memória mantém o formulário ativo quando Redis ainda não foi configurado;
+- Redis/KV exigido por padrão em produção para rate limit distribuído; fallback em memória fica restrito ao desenvolvimento ou a opt-out explícito;
 - validação server-side do Cloudflare Turnstile quando as chaves estão configuradas ou `REQUIRE_TURNSTILE=1`;
 - consentimento LGPD obrigatório e persistido com data, versão e IP;
 - campo honeypot `empresa`;
@@ -321,7 +333,7 @@ ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION=0
   Recomendadas em produção para rate limit distribuído.
 
 - `REQUIRE_EXTERNAL_RATE_LIMIT`
-  Use `1` para exigir Redis/KV em produção. Sem essa flag, `/api/leads` usa fallback em memória quando Redis/KV não está configurado.
+  Use `1` para explicitar que Redis/KV é obrigatório em produção. Em runtime publicado, esse é o comportamento padrão. Use `0` somente se aceitar fallback em memória.
 
 - `CONSENT_VERSION`
   Versão vigente do consentimento LGPD entregue por `/api/public-config` e validada por `/api/leads`.
@@ -338,20 +350,27 @@ Pré-requisito recomendado:
 ### Passos
 
 1. Crie um `.env.local` com base no `.env.example`.
-2. Preencha as credenciais do Supabase. Turnstile e Upstash/KV são recomendados em produção; use `REQUIRE_TURNSTILE=1` e `REQUIRE_EXTERNAL_RATE_LIMIT=1` somente depois de configurar as respectivas chaves.
+2. Preencha as credenciais do Supabase. Turnstile e Upstash/KV são recomendados em produção; em produção, configure Upstash/KV antes de publicar ou faça opt-out consciente com `REQUIRE_EXTERNAL_RATE_LIMIT=0`.
 3. Instale as dependências:
 
 ```powershell
 npm install
 ```
 
-4. Inicie o servidor local:
+4. Rode a validação estrutural e os testes automatizados:
+
+```powershell
+npm run build
+npm test
+```
+
+5. Inicie o servidor local:
 
 ```powershell
 npm run dev
 ```
 
-5. Acesse:
+6. Acesse:
 
 ```text
 http://127.0.0.1:3000
@@ -363,6 +382,36 @@ Health check local:
 curl.exe -i http://127.0.0.1:3000/health
 ```
 
+## Validacao de staging/producao
+
+Para Vercel, puxe as variaveis do ambiente antes de validar. Os arquivos `.env.*.local` continuam ignorados pelo Git:
+
+```powershell
+npx vercel env pull .env.production.local --environment=production --yes
+node scripts/validate-runtime-env.js --env=.env.production.local --target=production --domain=cdcentralrastreamento.com.br
+```
+
+Para staging/preview, use um arquivo separado e ajuste o dominio esperado:
+
+```powershell
+npx vercel env pull .env.staging.local --environment=preview --yes
+node scripts/validate-runtime-env.js --env=.env.staging.local --target=staging --domain=staging.seudominio.com.br
+```
+
+Depois de confirmar as variaveis, valide a gravacao real no Supabase. O comando insere uma linha com prefixo `[SMOKE]` na tabela configurada:
+
+```powershell
+node scripts/smoke-supabase-lead.js --env=.env.production.local --target=production --confirm-write
+```
+
+Depois do deploy publicado, rode um smoke test contra a URL real para confirmar DNS, headers, `/api/public-config`, Turnstile e asset otimizado:
+
+```powershell
+node scripts/smoke-deploy.js --url=https://cdcentralrastreamento.com.br
+```
+
+Se estiver validando um ambiente temporario sem Turnstile, use `--allow-turnstile-disabled` apenas nesse ambiente.
+
 ## Publicação
 
 O projeto deve ser publicado como aplicação Node.js permanente. Para Hostinger Node.js Web App, use [docs/deploy/HOSTINGER.md](./docs/deploy/HOSTINGER.md). Para VPS com PM2 e Nginx, use [docs/deploy/VPS.md](./docs/deploy/VPS.md).
@@ -370,14 +419,15 @@ O projeto deve ser publicado como aplicação Node.js permanente. Para Hostinger
 Pontos importantes na publicação:
 
 - configurar corretamente as variáveis de ambiente;
-- se editar o JSON-LD em [public/index.html](./public/index.html), rodar `node scripts/update-csp-hash.js` antes de deploy Vercel; no deploy Node.js, [server.js](./server.js) calcula o hash no startup;
+- se editar o JSON-LD em [public/index.html](./public/index.html), rodar `node scripts/update-csp-hash.js` antes de deploy Vercel; `npm run build` agora falha quando o hash ficar desatualizado;
 - garantir que o domínio final esteja em `SITE_URL`;
 - revisar `robots.txt`, `sitemap.xml` e os metadados canônicos se o domínio final não for `https://cdcentralrastreamento.com.br`;
 - liberar previews e ambientes auxiliares em `ALLOWED_ORIGINS`;
 - manter `SUPABASE_LEADS_INSERT_KEY` configurada no ambiente de produção;
 - configurar `TURNSTILE_SITE_KEY` e `TURNSTILE_SECRET_KEY` antes de usar `REQUIRE_TURNSTILE=1`;
 - configurar `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` antes de usar `REQUIRE_EXTERNAL_RATE_LIMIT=1`;
-- aplicar [database/supabase/leads-schema.sql](./database/supabase/leads-schema.sql) e validar se a tabela aceita os campos esperados.
+- aplicar [database/supabase/leads-schema.sql](./database/supabase/leads-schema.sql) e validar se a tabela aceita os campos esperados;
+- rodar `node scripts/validate-runtime-env.js`, `node scripts/smoke-supabase-lead.js` e `node scripts/smoke-deploy.js` para fechar a validacao do ambiente real.
 
 ### Estratégia Supabase/RLS
 
@@ -403,7 +453,9 @@ Este projeto atualmente é uma landing page de captação de leads. Ele ainda n�
 
 - revisar textos, telefones e links de contato;
 - validar o formulário no navegador;
-- testar o envio de lead até o Supabase;
+- rodar `node scripts/validate-runtime-env.js` para staging/producao;
+- testar o envio real de lead ate o Supabase com `node scripts/smoke-supabase-lead.js --confirm-write`;
+- validar o deploy real com `node scripts/smoke-deploy.js --url=https://cdcentralrastreamento.com.br`;
 - verificar responsividade em mobile, tablet e desktop;
 - revisar páginas legais:
   [public/politica-de-privacidade.html](./public/politica-de-privacidade.html)
