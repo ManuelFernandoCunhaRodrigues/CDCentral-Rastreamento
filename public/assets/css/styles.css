@@ -917,10 +917,10 @@ a:focus-visible {
   padding: 1.8rem 0;
 }
 
-.footer__grid > div,
+.footer__grid>div,
 .contact__content,
 .lead-form,
-.final-cta__box > div {
+.final-cta__box>div {
   min-width: 0;
 }
 
@@ -1580,6 +1580,7 @@ a:focus-visible {
 }
 
 @media (min-width: 680px) {
+
   .solutions-grid,
   .footer__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
