@@ -36,8 +36,6 @@ const loadEnvFile = (filename) => {
   });
 };
 
-loadEnvFile(".env");
-
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = "development";
 }
@@ -45,6 +43,7 @@ if (!process.env.NODE_ENV) {
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 if (!IS_PRODUCTION) {
+  loadEnvFile(".env");
   loadEnvFile(".env.local");
 }
 
