@@ -122,6 +122,29 @@ const getCanonicalHost = () => {
   }
 };
 
+const getHostnameFromHost = (host) => {
+  const normalizedHost = String(host || "").trim().toLowerCase();
+  if (!normalizedHost) {
+    return "";
+  }
+
+  try {
+    return new URL(`http://${normalizedHost}`).hostname.toLowerCase();
+  } catch (error) {
+    return normalizedHost.replace(/^\[/, "").replace(/\]$/, "").split(":")[0];
+  }
+};
+
+const isLocalRequestHost = (host) => {
+  const hostname = getHostnameFromHost(host);
+  return hostname === "localhost" || hostname === "127.0.0.1";
+};
+
+const shouldRedirectToCanonicalHost = (req) => {
+  const host = getRequestHost(req);
+  return IS_PRODUCTION && host && host !== getCanonicalHost() && !isLocalRequestHost(host);
+};
+
 let cachedJsonLdHashDirective;
 
 const getJsonLdHashDirective = () => {
@@ -283,6 +306,20 @@ const sendJson = (req, res, statusCode, payload, extraHeaders = {}) => {
   });
 };
 
+const sendCanonicalHostRedirect = (req, res) => {
+  const requestTarget = String(req.url || "/");
+  const locationPath = requestTarget.startsWith("/") ? requestTarget : "/";
+
+  res.writeHead(301, {
+    ...getSecurityHeaders(req),
+    Location: `https://${getCanonicalHost()}${locationPath}`,
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
+    "Cache-Control": "no-store",
+    "Content-Length": 0,
+  });
+  res.end();
+};
+
 const logSafeError = (label, error) => {
   const details = {
     name: error?.name || "Error",
@@ -407,6 +444,11 @@ const handleRequest = (req, res) => {
   }
 
   attachRequestLogger(req, res, pathname);
+
+  if (shouldRedirectToCanonicalHost(req)) {
+    sendCanonicalHostRedirect(req, res);
+    return;
+  }
 
   if (pathname === "/health" || pathname === "/healthz") {
     handleHealth(req, res);
