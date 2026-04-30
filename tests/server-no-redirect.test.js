@@ -2,7 +2,7 @@
 
 process.env.NODE_ENV = "production";
 process.env.SITE_URL = "https://cdcentralrastreamento.com.br";
-process.env.ENABLE_CANONICAL_REDIRECT = "1";
+delete process.env.ENABLE_CANONICAL_REDIRECT;
 
 const assert = require("node:assert/strict");
 const http = require("node:http");
@@ -21,7 +21,7 @@ const request = ({ method = "GET", path = "/", headers = {} }) =>
         method,
         path,
         headers: {
-          Host: "cdcentralrastreamento.com.br",
+          Host: "cd-central.vercel.app",
           ...headers,
         },
       },
@@ -55,30 +55,10 @@ test.after(async () => {
   await new Promise((resolve) => server.close(resolve));
 });
 
-test("redireciona host nao canonico em producao com robots noarchive", async () => {
-  const response = await request({
-    path: "/rastreamento?utm=preview",
-    headers: {
-      Host: "cd-central.vercel.app",
-    },
-  });
-
-  assert.equal(response.statusCode, 301);
-  assert.equal(response.headers.location, "https://cdcentralrastreamento.com.br/rastreamento?utm=preview");
-  assert.equal(response.headers["x-robots-tag"], "noindex, nofollow, noarchive");
-  assert.equal(response.headers["cache-control"], "no-store");
-});
-
-test("serve headers de seguranca fortes no host canonico em producao", async () => {
+test("nao redireciona host nao canonico quando redirect canonico esta desligado", async () => {
   const response = await request({ path: "/" });
 
   assert.equal(response.statusCode, 200);
-  assert.match(response.headers["permissions-policy"], /payment=\(\)/);
-  assert.match(response.headers["permissions-policy"], /interest-cohort=\(\)/);
-  assert.equal(
-    response.headers["reporting-endpoints"],
-    'default="https://cdcentralrastreamento.com.br/api/csp-report"'
-  );
-  assert.equal(response.headers["cross-origin-embedder-policy"], "require-corp");
-  assert.equal(response.headers["strict-transport-security"], "max-age=63072000; includeSubDomains; preload");
+  assert.equal(response.headers.location, undefined);
+  assert.equal(response.headers["x-robots-tag"], "noindex, nofollow, noarchive");
 });

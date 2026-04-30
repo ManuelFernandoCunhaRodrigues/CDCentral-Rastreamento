@@ -271,6 +271,7 @@ REQUIRE_REQUEST_ORIGIN=1
 CONSENT_VERSION=2026-04-28
 SITE_URL=https://seudominio.com.br
 ALLOWED_ORIGINS=https://seudominio.com.br
+ENABLE_CANONICAL_REDIRECT=0
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_LEADS_INSERT_KEY=your_server_side_insert_key
 SUPABASE_LEADS_TABLE=leads
@@ -300,6 +301,9 @@ ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION=0
 
 - `ALLOWED_ORIGINS`
   Lista de origens extras liberadas no CORS, separadas por vírgula.
+
+- `ENABLE_CANONICAL_REDIRECT`
+  Use `1` somente depois que o domínio em `SITE_URL` estiver resolvendo publicamente. Quando desligado, hosts auxiliares não são redirecionados para evitar indisponibilidade por DNS incompleto.
 
 - `NODE_ENV`
   Use `production` em Hostinger/VPS e `development` localmente.
@@ -421,6 +425,7 @@ Pontos importantes na publicação:
 - configurar corretamente as variáveis de ambiente;
 - se editar o JSON-LD em [public/index.html](./public/index.html), rodar `node scripts/update-csp-hash.js` antes de deploy Vercel; `npm run build` agora falha quando o hash ficar desatualizado;
 - garantir que o domínio final esteja em `SITE_URL`;
+- manter `ENABLE_CANONICAL_REDIRECT=0` até o domínio final resolver em DNS e só então ativar o redirect canônico;
 - revisar `robots.txt`, `sitemap.xml` e os metadados canônicos se o domínio final não for `https://cdcentralrastreamento.com.br`;
 - liberar previews e ambientes auxiliares em `ALLOWED_ORIGINS`;
 - manter `SUPABASE_LEADS_INSERT_KEY` configurada no ambiente de produção;

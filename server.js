@@ -57,6 +57,7 @@ const SERVICE_NAME = "cdcentral-rastreamento";
 const GENERIC_ERROR_MESSAGE = "Nao foi possivel processar sua solicitacao agora.";
 const SHUTDOWN_TIMEOUT_MS = 10000;
 const DEFAULT_SITE_URL = "https://cdcentralrastreamento.com.br";
+const ENABLE_CANONICAL_REDIRECT = process.env.ENABLE_CANONICAL_REDIRECT === "1";
 
 const PUBLIC_FILES = new Set([
   "index.html",
@@ -141,7 +142,7 @@ const isLocalRequestHost = (host) => {
 
 const shouldRedirectToCanonicalHost = (req) => {
   const host = getRequestHost(req);
-  return IS_PRODUCTION && host && host !== getCanonicalHost() && !isLocalRequestHost(host);
+  return ENABLE_CANONICAL_REDIRECT && IS_PRODUCTION && host && host !== getCanonicalHost() && !isLocalRequestHost(host);
 };
 
 let cachedJsonLdHashDirective;

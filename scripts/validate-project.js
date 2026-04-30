@@ -233,10 +233,34 @@ if (fs.existsSync(vercelConfigPath)) {
     }
   });
 
+  if ((vercelConfig.redirects || []).length > 0) {
+    errors.push("vercel.json: redirects canonicos devem ficar no handler Node para preservar headers");
+  }
+
   const forbiddenVercelHeaderKeys = new Set(["Content-Security-Policy", "Content-Security-Policy-Report-Only", "Report-To"]);
+  const forbiddenGlobalHeaderKeys = new Set([
+    ...forbiddenVercelHeaderKeys,
+    "Reporting-Endpoints",
+    "Permissions-Policy",
+    "Strict-Transport-Security",
+    "Cross-Origin-Opener-Policy",
+    "Cross-Origin-Embedder-Policy",
+    "X-Frame-Options",
+    "Referrer-Policy",
+    "X-Permitted-Cross-Domain-Policies",
+  ]);
   const nodeOwnedHeaders = (vercelConfig.headers || [])
-    .flatMap((entry) => entry.headers || [])
-    .filter((entry) => forbiddenVercelHeaderKeys.has(entry.key));
+    .flatMap((entry) =>
+      (entry.headers || []).map((header) => ({
+        key: header.key,
+        source: entry.source,
+      }))
+    )
+    .filter(
+      (header) =>
+        forbiddenVercelHeaderKeys.has(header.key) ||
+        (header.source === "/(.*)" && forbiddenGlobalHeaderKeys.has(header.key))
+    );
 
   nodeOwnedHeaders.forEach((header) => {
     errors.push(`vercel.json: ${header.key} deve ser servido pelo handler Node`);
