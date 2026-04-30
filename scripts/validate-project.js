@@ -233,27 +233,28 @@ if (fs.existsSync(vercelConfigPath)) {
     }
   });
 
+  const forbiddenVercelHeaderKeys = new Set(["Content-Security-Policy", "Content-Security-Policy-Report-Only", "Report-To"]);
+  const nodeOwnedHeaders = (vercelConfig.headers || [])
+    .flatMap((entry) => entry.headers || [])
+    .filter((entry) => forbiddenVercelHeaderKeys.has(entry.key));
+
+  nodeOwnedHeaders.forEach((header) => {
+    errors.push(`vercel.json: ${header.key} deve ser servido pelo handler Node`);
+  });
+
   const indexPath = path.join(publicRoot, "index.html");
   if (fs.existsSync(indexPath)) {
     const expectedHashDirective = getJsonLdHashDirective(fs.readFileSync(indexPath, "utf8"));
-    const cspHeaders = (vercelConfig.headers || [])
-      .filter((entry) => entry.source === "/(.*)")
-      .flatMap((entry) => entry.headers || [])
-      .filter((entry) => ["Content-Security-Policy", "Content-Security-Policy-Report-Only"].includes(entry.key));
 
     if (!expectedHashDirective) {
       errors.push("public/index.html: JSON-LD ausente para hash CSP");
     }
 
-    if (cspHeaders.length === 0) {
-      errors.push("vercel.json: headers CSP ausentes");
+    const serverPath = path.join(root, "server.js");
+    const serverSource = fs.existsSync(serverPath) ? fs.readFileSync(serverPath, "utf8") : "";
+    if (!serverSource.includes("getJsonLdHashDirective")) {
+      errors.push("server.js: CSP deve calcular o hash JSON-LD no handler Node");
     }
-
-    cspHeaders.forEach((cspHeader) => {
-      if (expectedHashDirective && !String(cspHeader.value || "").includes(expectedHashDirective)) {
-        errors.push(`vercel.json: hash CSP do JSON-LD desatualizado (${cspHeader.key})`);
-      }
-    });
   }
 }
 

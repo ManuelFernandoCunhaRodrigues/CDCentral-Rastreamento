@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node -e \"process.env.NODE_ENV='development'; require('./server').startServer()\"",
-    "build": "node scripts/validate-project.js",
+    "build": "node scripts/update-csp-hash.js && node scripts/validate-project.js",
     "check:env": "node scripts/validate-runtime-env.js",
     "smoke:supabase": "node scripts/smoke-supabase-lead.js",
     "smoke:deploy": "node scripts/smoke-deploy.js",
