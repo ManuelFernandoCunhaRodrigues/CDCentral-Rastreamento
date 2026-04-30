@@ -4,7 +4,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const http = require("http");
 const path = require("path");
-const { getClientIp } = require("./lib/http-utils");
+const { anonymizeIp, getClientIp } = require("./lib/http-utils");
 
 const workspaceRoot = path.resolve(__dirname);
 const publicRoot = path.join(workspaceRoot, "public");
@@ -346,7 +346,9 @@ const attachRequestLogger = (req, res, pathname) => {
       logged = true;
       const durationMs = Number((process.hrtime.bigint() - startedAt) / 1000000n);
       console.log(
-        `[${new Date().toISOString()}] ${req.method} ${pathname} ${res.statusCode} ${durationMs}ms ip=${getRequestClientIp(req)}`
+        `[${new Date().toISOString()}] ${req.method} ${pathname} ${res.statusCode} ${durationMs}ms ip=${anonymizeIp(
+          getRequestClientIp(req)
+        )}`
       );
     }
 

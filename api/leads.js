@@ -2,7 +2,13 @@
 
 const { getConsentVersion } = require("../lib/app-config");
 const { LeadStorageError, normalizeLead, validateLead, saveLeadToSupabase } = require("../lib/leads-service");
-const { HttpError, createRateLimiter, getClientIp: getRequestClientIp, readJsonBody } = require("../lib/http-utils");
+const {
+  HttpError,
+  anonymizeIp,
+  createRateLimiter,
+  getClientIp: getRequestClientIp,
+  readJsonBody,
+} = require("../lib/http-utils");
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
@@ -340,7 +346,7 @@ module.exports = async (req, res) => {
       ...lead,
       consent_at: new Date().toISOString(),
       consent_version: CONSENT_VERSION,
-      consent_ip: clientIp,
+      consent_ip: anonymizeIp(clientIp),
     });
 
     sendJson(req, res, 201, {
