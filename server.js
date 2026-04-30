@@ -185,30 +185,34 @@ const getCsp = ({ reportOnly = false } = {}) => {
 };
 
 const getSecurityHeaders = (req) => {
+  const cspReportUrl = `${getSiteOrigin()}/api/csp-report`;
   const headers = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Permissions-Policy":
+      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=(), interest-cohort=()",
     "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "require-corp",
     "X-Permitted-Cross-Domain-Policies": "none",
     "Content-Security-Policy": getCsp(),
     "Content-Security-Policy-Report-Only": getCsp({ reportOnly: true }),
+    "Reporting-Endpoints": `default="${cspReportUrl}"`,
     "Report-To": JSON.stringify({
       group: "default",
       max_age: 10886400,
-      endpoints: [{ url: `${getSiteOrigin()}/api/csp-report` }],
+      endpoints: [{ url: cspReportUrl }],
       include_subdomains: true,
     }),
   };
 
   if (IS_PRODUCTION) {
-    headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload";
   }
 
   const host = getRequestHost(req);
   if (host && host !== getCanonicalHost()) {
-    headers["X-Robots-Tag"] = "noindex, nofollow";
+    headers["X-Robots-Tag"] = "noindex, nofollow, noarchive";
   }
 
   return headers;
