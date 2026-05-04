@@ -28,3 +28,19 @@ test("server falha boot em producao sem Turnstile e Upstash", () => {
       /UPSTASH_REDIS_REST_TOKEN/.test(error.message)
   );
 });
+
+test("server rejeita desligar rate limit externo em producao", () => {
+  process.env.TURNSTILE_SITE_KEY = "site-key-test";
+  process.env.TURNSTILE_SECRET_KEY = "secret-key-test";
+  process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
+  process.env.REQUIRE_EXTERNAL_RATE_LIMIT = "0";
+
+  assert.throws(
+    () => createAppServer(),
+    (error) =>
+      error instanceof Error &&
+      /Production security config invalid/.test(error.message) &&
+      /REQUIRE_EXTERNAL_RATE_LIMIT must not be 0 in production/.test(error.message)
+  );
+});

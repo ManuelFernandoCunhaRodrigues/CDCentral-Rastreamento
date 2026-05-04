@@ -248,7 +248,6 @@ const assertProductionSecurityConfig = () => {
 
   const errors = [];
   const turnstileDisabled = String(process.env.REQUIRE_TURNSTILE || "").trim() === "0";
-  const externalRateLimitDisabled = String(process.env.REQUIRE_EXTERNAL_RATE_LIMIT || "").trim() === "0";
 
   if (turnstileDisabled) {
     errors.push("REQUIRE_TURNSTILE must not be 0 in production");
@@ -259,11 +258,13 @@ const assertProductionSecurityConfig = () => {
     }
   }
 
-  if (!externalRateLimitDisabled) {
-    const missingUpstash = getRequiredEnvMissing(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
-    if (missingUpstash.length > 0) {
-      errors.push(`${missingUpstash.join(", ")} missing`);
-    }
+  if (String(process.env.REQUIRE_EXTERNAL_RATE_LIMIT || "").trim() === "0") {
+    errors.push("REQUIRE_EXTERNAL_RATE_LIMIT must not be 0 in production");
+  }
+
+  const missingUpstash = getRequiredEnvMissing(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
+  if (missingUpstash.length > 0) {
+    errors.push(`${missingUpstash.join(", ")} missing`);
   }
 
   const missingSupabase = getRequiredEnvMissing(["SUPABASE_URL", "SUPABASE_LEADS_INSERT_KEY"]);
