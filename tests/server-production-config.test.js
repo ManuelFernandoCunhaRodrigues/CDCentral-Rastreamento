@@ -4,7 +4,7 @@ process.env.NODE_ENV = "production";
 process.env.SITE_URL = "https://cdcentralrastreamento.com.br";
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_LEADS_INSERT_KEY = "sb_secret_test_key";
-process.env.REQUIRE_TURNSTILE = "1";
+delete process.env.REQUIRE_TURNSTILE;
 delete process.env.TURNSTILE_SITE_KEY;
 delete process.env.TURNSTILE_SECRET_KEY;
 delete process.env.REQUIRE_EXTERNAL_RATE_LIMIT;
@@ -16,52 +16,55 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { createAppServer } = require("../server");
 
-test("server falha boot em producao sem Turnstile e Upstash", () => {
+test("server permite producao sem Upstash quando rate limit externo nao e obrigatorio", () => {
+  assert.doesNotThrow(() => createAppServer());
+});
+
+test("server permite Turnstile desabilitado em producao", () => {
+  process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
+  delete process.env.REQUIRE_TURNSTILE;
+  delete process.env.TURNSTILE_SITE_KEY;
+  delete process.env.TURNSTILE_SECRET_KEY;
+
+  try {
+    assert.doesNotThrow(() => createAppServer());
+  } finally {
+    process.env.REQUIRE_TURNSTILE = "1";
+  }
+});
+
+test("server falha quando Turnstile e obrigatorio sem chaves", () => {
+  process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
+  process.env.REQUIRE_TURNSTILE = "1";
+  delete process.env.TURNSTILE_SITE_KEY;
+  delete process.env.TURNSTILE_SECRET_KEY;
+
   assert.throws(
     () => createAppServer(),
     (error) =>
       error instanceof Error &&
       /Production security config invalid/.test(error.message) &&
       /TURNSTILE_SITE_KEY/.test(error.message) &&
-      /TURNSTILE_SECRET_KEY/.test(error.message) &&
-      /UPSTASH_REDIS_REST_URL/.test(error.message) &&
-      /UPSTASH_REDIS_REST_TOKEN/.test(error.message)
+      /TURNSTILE_SECRET_KEY/.test(error.message)
   );
 });
 
-test("server exige REQUIRE_TURNSTILE=1 explicitamente em producao", () => {
+test("server exige Upstash quando rate limit externo e obrigatorio", () => {
   process.env.TURNSTILE_SITE_KEY = "site-key-test";
   process.env.TURNSTILE_SECRET_KEY = "secret-key-test";
-  process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
-  delete process.env.REQUIRE_TURNSTILE;
-
-  try {
-    assert.throws(
-      () => createAppServer(),
-      (error) =>
-        error instanceof Error &&
-        /Production security config invalid/.test(error.message) &&
-        /REQUIRE_TURNSTILE must be 1 in production/.test(error.message)
-    );
-  } finally {
-    process.env.REQUIRE_TURNSTILE = "1";
-  }
-});
-
-test("server rejeita desligar rate limit externo em producao", () => {
-  process.env.TURNSTILE_SITE_KEY = "site-key-test";
-  process.env.TURNSTILE_SECRET_KEY = "secret-key-test";
-  process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
-  process.env.REQUIRE_EXTERNAL_RATE_LIMIT = "0";
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  process.env.REQUIRE_EXTERNAL_RATE_LIMIT = "1";
 
   assert.throws(
     () => createAppServer(),
     (error) =>
       error instanceof Error &&
       /Production security config invalid/.test(error.message) &&
-      /REQUIRE_EXTERNAL_RATE_LIMIT must not be 0 in production/.test(error.message)
+      /UPSTASH_REDIS_REST_URL/.test(error.message) &&
+      /UPSTASH_REDIS_REST_TOKEN/.test(error.message)
   );
 });
 

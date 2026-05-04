@@ -70,12 +70,12 @@ SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_LEADS_INSERT_KEY=your_server_side_insert_key
 ALLOW_SUPABASE_SERVICE_ROLE_KEY_FALLBACK=0
 SUPABASE_LEADS_TABLE=leads
-REQUIRE_TURNSTILE=1
+REQUIRE_TURNSTILE=0
 TURNSTILE_SITE_KEY=your_public_turnstile_site_key
 TURNSTILE_SECRET_KEY=your_private_turnstile_secret_key
 UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
-REQUIRE_EXTERNAL_RATE_LIMIT=1
+REQUIRE_EXTERNAL_RATE_LIMIT=0
 ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION=0
 ```
 
@@ -232,7 +232,7 @@ curl -I https://cdcentralrastreamento.com.br/lib/http-utils.js
 curl -I https://cdcentralrastreamento.com.br/database/supabase/leads-schema.sql
 ```
 
-Teste o formulario no navegador para validar Turnstile real, origem, Supabase e rate limit.
+Teste o formulario no navegador para validar origem, Supabase e rate limit. Se Turnstile estiver habilitado, valide tambem o widget real.
 
 ## 11. Verificar logs
 
@@ -276,7 +276,7 @@ Se alterar o schema, aplique `database/supabase/leads-schema.sql` no Supabase.
 
 - Verifique `.env`.
 - Confirme `TURNSTILE_SECRET_KEY`, Supabase e Upstash.
-- Em producao, `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` sao obrigatorios para `/api/leads`; sem eles o endpoint falha fechado.
+- Se `REQUIRE_EXTERNAL_RATE_LIMIT=1`, `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` sao obrigatorios para `/api/leads`; sem eles o endpoint falha fechado.
 - Veja `pm2 logs cdcentral-rastreamento`.
 
 403 em `/api/leads`:

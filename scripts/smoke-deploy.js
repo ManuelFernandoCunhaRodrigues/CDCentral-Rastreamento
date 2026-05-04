@@ -16,7 +16,7 @@ try {
 
 const baseUrl = String(args.url || process.env.SMOKE_DEPLOY_URL || process.env.SITE_URL || "").replace(/\/$/, "");
 const timeoutMs = Number(args.timeout || 10000);
-const expectTurnstile = args["allow-turnstile-disabled"] !== true;
+const expectTurnstile = args["require-turnstile"] === true;
 const checks = [];
 
 if (!baseUrl) {
@@ -100,7 +100,7 @@ const assertStatus = async (pathname, expectedStatus, label) => {
       } else if (config?.turnstileEnabled === true) {
         addCheck("ok", "turnstile", "Turnstile is enabled in public config");
       } else {
-        addCheck("warn", "turnstile", "Turnstile disabled by allowed smoke-test flag");
+        addCheck("warn", "turnstile", "Turnstile is disabled in public config");
       }
     }
   } catch (error) {

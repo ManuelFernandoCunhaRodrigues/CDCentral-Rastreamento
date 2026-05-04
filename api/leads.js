@@ -25,7 +25,7 @@ const TURNSTILE_TIMEOUT_MS = 5000;
 const GENERIC_ERROR_MESSAGE = "Nao foi possivel enviar sua solicitacao agora. Tente novamente em instantes.";
 const IS_DEPLOYED_RUNTIME = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
 const TRUST_PROXY_HEADERS = process.env.VERCEL === "1" || process.env.TRUST_PROXY_HEADERS === "1";
-const REQUIRE_EXTERNAL_RATE_LIMIT = IS_DEPLOYED_RUNTIME || process.env.REQUIRE_EXTERNAL_RATE_LIMIT === "1";
+const REQUIRE_EXTERNAL_RATE_LIMIT = process.env.REQUIRE_EXTERNAL_RATE_LIMIT === "1";
 const REQUIRE_REQUEST_ORIGIN =
   process.env.REQUIRE_REQUEST_ORIGIN === "1" || (process.env.REQUIRE_REQUEST_ORIGIN !== "0" && IS_DEPLOYED_RUNTIME);
 const ALLOW_LOCAL_ORIGINS = process.env.ALLOW_LOCAL_ORIGINS === "1" || !IS_DEPLOYED_RUNTIME;

@@ -152,7 +152,9 @@ const upstashToken = String(process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
 const kvUrl = String(process.env.KV_REST_API_URL || "").trim();
 const kvToken = String(process.env.KV_REST_API_TOKEN || "").trim();
 
-if (isPublishedTarget) {
+const requireExternalRateLimit = String(process.env.REQUIRE_EXTERNAL_RATE_LIMIT || "").trim() === "1";
+
+if (isPublishedTarget && requireExternalRateLimit) {
   requireUrl("UPSTASH_REDIS_REST_URL", "upstash redis");
   requireVariable("UPSTASH_REDIS_REST_TOKEN", "upstash redis");
   if (kvUrl || kvToken) {
@@ -166,30 +168,35 @@ if (isPublishedTarget) {
   requireVariable("KV_REST_API_TOKEN", "redis kv fallback");
   addWarn("upstash redis", "KV_REST_API_* is configured, but UPSTASH_REDIS_REST_* is absent");
 } else {
-  addError("upstash redis", "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are missing");
+  addWarn("upstash redis", "not configured; using in-memory rate limit fallback");
 }
 
-const turnstileSiteKey = requireVariable("TURNSTILE_SITE_KEY", "turnstile");
-const turnstileSecretKey = requireVariable("TURNSTILE_SECRET_KEY", "turnstile");
-if (turnstileSiteKey && turnstileSecretKey) {
-  addOk("turnstile", "site key and secret key are both present");
+const requireTurnstile = String(process.env.REQUIRE_TURNSTILE || "").trim() === "1";
+const turnstileSiteKeyValue = String(process.env.TURNSTILE_SITE_KEY || "").trim();
+const turnstileSecretKeyValue = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
+const hasTurnstilePartialConfig = Boolean(turnstileSiteKeyValue || turnstileSecretKeyValue);
+
+if (requireTurnstile || hasTurnstilePartialConfig) {
+  const turnstileSiteKey = requireVariable("TURNSTILE_SITE_KEY", "turnstile");
+  const turnstileSecretKey = requireVariable("TURNSTILE_SECRET_KEY", "turnstile");
+  if (turnstileSiteKey && turnstileSecretKey) {
+    addOk("turnstile", "site key and secret key are both present");
+  }
+} else {
+  addOk("turnstile", "disabled; set REQUIRE_TURNSTILE=1 with keys to enable it");
 }
 
 if (isPublishedTarget) {
-  if (String(process.env.REQUIRE_TURNSTILE || "").trim() !== "1") {
-    addError("turnstile", "REQUIRE_TURNSTILE must be 1 in staging/production");
-  } else {
+  if (requireTurnstile) {
     addOk("turnstile", "REQUIRE_TURNSTILE=1");
-  }
-
-  if (String(process.env.REQUIRE_EXTERNAL_RATE_LIMIT || "").trim() === "0") {
-    addError("rate limit", "REQUIRE_EXTERNAL_RATE_LIMIT cannot be 0 in staging/production");
   } else {
-    addOk("rate limit", "external rate limit is required by runtime defaults");
+    addWarn("turnstile", "Turnstile is disabled in staging/production");
   }
 
-  if (String(process.env.ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION || "").trim() === "1") {
-    addError("rate limit", "ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION must not be 1 in staging/production");
+  if (requireExternalRateLimit) {
+    addOk("rate limit", "external rate limit is required");
+  } else {
+    addWarn("rate limit", "external rate limit is disabled; memory fallback is best-effort");
   }
 
   if (String(process.env.REQUIRE_REQUEST_ORIGIN || "").trim() === "0") {

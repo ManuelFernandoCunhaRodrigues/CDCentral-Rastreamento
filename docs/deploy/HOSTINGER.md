@@ -102,12 +102,12 @@ SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_LEADS_INSERT_KEY=your_server_side_insert_key
 ALLOW_SUPABASE_SERVICE_ROLE_KEY_FALLBACK=0
 SUPABASE_LEADS_TABLE=leads
-REQUIRE_TURNSTILE=1
+REQUIRE_TURNSTILE=0
 TURNSTILE_SITE_KEY=your_public_turnstile_site_key
 TURNSTILE_SECRET_KEY=your_private_turnstile_secret_key
 UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
-REQUIRE_EXTERNAL_RATE_LIMIT=1
+REQUIRE_EXTERNAL_RATE_LIMIT=0
 ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION=0
 ```
 
@@ -120,19 +120,19 @@ Nunca coloque `SUPABASE_LEADS_INSERT_KEY`, `TURNSTILE_SECRET_KEY` ou `UPSTASH_RE
 O schema padrao deixa `public.leads` fechada para `anon` e `authenticated`. A estrategia aplicada e:
 
 - o navegador envia leads somente para `/api/leads`;
-- a API valida origem, Turnstile, rate limit, payload e consentimento;
+- a API valida origem, rate limit, payload e consentimento; Turnstile e opcional;
 - a API grava no Supabase usando `SUPABASE_LEADS_INSERT_KEY` somente no backend;
 - use uma chave server-side, preferencialmente `service_role` ou secret key, nunca anon/publishable key.
 
 `SUPABASE_SERVICE_ROLE_KEY` nao e usado como fallback implicito. Se a hospedagem injeta esse nome e voce decidir usa-lo, configure `ALLOW_SUPABASE_SERVICE_ROLE_KEY_FALLBACK=1` conscientemente.
 
-Se voce preferir usar anon/publishable key, sera necessario redesenhar as permissoes com uma funcao server-side segura. Nao exponha insert direto na tabela, pois isso contorna Turnstile e rate limit.
+Se voce preferir usar anon/publishable key, sera necessario redesenhar as permissoes com uma funcao server-side segura. Nao exponha insert direto na tabela, pois isso contorna rate limit e validacoes do backend.
 
 ### Upstash Redis
 
-`UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` sao obrigatorios em producao para `/api/leads`. Sem Redis, a API falha fechada e nao aceita leads, evitando formulario sem protecao contra abuso.
+`UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` sao recomendados em producao para rate limit distribuido. Sem Redis e com `REQUIRE_EXTERNAL_RATE_LIMIT=0`, a API usa fallback em memoria.
 
-`ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION=1` so deve ser usado conscientemente em um unico processo Node. Para Hostinger e producao normal, mantenha `0`.
+`ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION` fica apenas por compatibilidade. Para Hostinger e producao normal, mantenha `0`.
 
 Se alterar variaveis depois do deploy, faca redeploy ou restart pelo painel para o processo Node.js carregar os novos valores.
 
@@ -142,7 +142,7 @@ Se alterar variaveis depois do deploy, faca redeploy ou restart pelo painel para
 2. Ative SSL no hPanel.
 3. Aguarde o certificado ficar ativo.
 4. Confirme que `SITE_URL` e `ALLOWED_ORIGINS` usam `https://`.
-5. No Cloudflare Turnstile, autorize o dominio real.
+5. Se usar Cloudflare Turnstile, autorize o dominio real.
 
 ## Testes apos deploy
 
@@ -158,13 +158,13 @@ Resposta esperada:
 {"status":"ok"}
 ```
 
-Config publica do Turnstile:
+Config publica:
 
 ```bash
 curl -i https://cdcentralrastreamento.com.br/api/public-config
 ```
 
-Deve responder JSON com `turnstileSiteKey`, sem secrets.
+Deve responder JSON com `consentVersion`. Se Turnstile estiver desabilitado, `turnstileEnabled` deve ser `false`.
 
 Site:
 
@@ -193,10 +193,10 @@ Envio de lead:
 1. Abra `https://cdcentralrastreamento.com.br/`.
 2. Preencha o formulario.
 3. Marque o consentimento.
-4. Resolva o Turnstile.
+4. Se Turnstile estiver habilitado, resolva a verificacao.
 5. Envie e confira se o lead aparece no Supabase.
 
-Teste direto com Turnstile invalido:
+Teste direto com Turnstile invalido, apenas se `REQUIRE_TURNSTILE=1`:
 
 ```bash
 STARTED_AT=$(node -e 'console.log(Date.now() - 2000)')
@@ -227,7 +227,7 @@ Erro 500:
 - Confirme todas as variaveis de ambiente.
 - Teste `/health` e `/api/public-config`.
 - Se `/api/leads` falhar, valide Supabase, Turnstile e Upstash.
-- Se o erro for logo apos o deploy, confirme se Upstash esta configurado; em producao o rate limit distribuido e obrigatorio.
+- Se o erro for logo apos o deploy e voce tiver `REQUIRE_EXTERNAL_RATE_LIMIT=1`, confirme se Upstash esta configurado.
 
 Problema com porta:
 
