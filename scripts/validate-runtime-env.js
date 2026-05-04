@@ -8,6 +8,7 @@ const {
   parseOriginList,
   redact,
 } = require("./lib/env");
+const { assertServerSideSupabaseKey } = require("../lib/leads-service");
 
 const args = parseArgs();
 if (!args.env && !args["env-file"] && String(args._[0] || "").includes(".env")) {
@@ -43,38 +44,15 @@ const addOk = (subject, message) => addResult("ok", subject, message);
 const addWarn = (subject, message) => addResult("warn", subject, message);
 const addError = (subject, message) => addResult("error", subject, message);
 
-const decodeJwtPayload = (token) => {
-  const parts = String(token || "").split(".");
-  if (parts.length < 2) {
-    return null;
-  }
-
-  try {
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-    return JSON.parse(Buffer.from(paddedBase64, "base64").toString("utf8"));
-  } catch (error) {
-    return null;
-  }
-};
-
-const isPublicSupabaseKey = (key) => {
-  const normalizedKey = String(key || "").trim();
-  if (normalizedKey.startsWith("sb_publishable_")) {
-    return true;
-  }
-
-  const payload = decodeJwtPayload(normalizedKey);
-  return ["anon", "authenticated"].includes(String(payload?.role || "").toLowerCase());
-};
-
 const validateSupabaseServerKey = (name, value) => {
   if (hasPlaceholderValue(value)) {
     addError("supabase key", `${name} still looks like a placeholder`);
     return;
   }
 
-  if (isPublicSupabaseKey(value)) {
+  try {
+    assertServerSideSupabaseKey(value);
+  } catch (error) {
     addError("supabase key", `${name} looks like an anon/publishable key; use a server-side key`);
     return;
   }

@@ -207,7 +207,6 @@ const getCsp = ({ reportOnly = false } = {}) => {
 };
 
 const getSecurityHeaders = (req) => {
-  const cspReportUrl = `${getSiteOrigin()}/api/csp-report`;
   const headers = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
@@ -219,12 +218,12 @@ const getSecurityHeaders = (req) => {
     "X-Permitted-Cross-Domain-Policies": "none",
     "Content-Security-Policy": getCsp(),
     "Content-Security-Policy-Report-Only": getCsp({ reportOnly: true }),
-    "Reporting-Endpoints": `default="${cspReportUrl}"`,
+    "Reporting-Endpoints": 'default="/api/csp-report"',
     "Report-To": JSON.stringify({
       group: "default",
       max_age: 10886400,
-      endpoints: [{ url: cspReportUrl }],
-      include_subdomains: true,
+      endpoints: [{ url: "/api/csp-report" }],
+      include_subdomains: false,
     }),
   };
 
@@ -238,6 +237,47 @@ const getSecurityHeaders = (req) => {
   }
 
   return headers;
+};
+
+const getRequiredEnvMissing = (names) => names.filter((name) => !String(process.env[name] || "").trim());
+
+const assertProductionSecurityConfig = () => {
+  if (!IS_PRODUCTION) {
+    return;
+  }
+
+  const errors = [];
+  const turnstileDisabled = String(process.env.REQUIRE_TURNSTILE || "").trim() === "0";
+  const externalRateLimitDisabled = String(process.env.REQUIRE_EXTERNAL_RATE_LIMIT || "").trim() === "0";
+
+  if (turnstileDisabled) {
+    errors.push("REQUIRE_TURNSTILE must not be 0 in production");
+  } else {
+    const missingTurnstile = getRequiredEnvMissing(["TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"]);
+    if (missingTurnstile.length > 0) {
+      errors.push(`${missingTurnstile.join(", ")} missing`);
+    }
+  }
+
+  if (!externalRateLimitDisabled) {
+    const missingUpstash = getRequiredEnvMissing(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
+    if (missingUpstash.length > 0) {
+      errors.push(`${missingUpstash.join(", ")} missing`);
+    }
+  }
+
+  const missingSupabase = getRequiredEnvMissing(["SUPABASE_URL", "SUPABASE_LEADS_INSERT_KEY"]);
+  if (missingSupabase.length > 0) {
+    errors.push(`${missingSupabase.join(", ")} missing`);
+  }
+
+  if (String(process.env.ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION || "").trim() === "1") {
+    errors.push("ALLOW_MEMORY_RATE_LIMIT_IN_PRODUCTION must not be 1 in production");
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Production security config invalid: ${errors.join("; ")}`);
+  }
 };
 
 const toPosixPath = (value) => String(value || "").replace(/\\/g, "/");
@@ -470,7 +510,10 @@ const handleRequest = (req, res) => {
   handleStatic(req, res, pathname);
 };
 
-const createAppServer = () => http.createServer(handleRequest);
+const createAppServer = () => {
+  assertProductionSecurityConfig();
+  return http.createServer(handleRequest);
+};
 
 let server;
 
@@ -530,6 +573,8 @@ if (require.main === module) {
 }
 
 module.exports = Object.assign(handleRequest, {
+  assertProductionSecurityConfig,
   createAppServer,
+  getSecurityHeaders,
   startServer,
 });
