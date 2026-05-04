@@ -34,6 +34,16 @@ test("server permite Turnstile desabilitado em producao", () => {
   }
 });
 
+test("server permite Turnstile parcial quando nao e obrigatorio", () => {
+  process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
+  delete process.env.REQUIRE_TURNSTILE;
+  process.env.TURNSTILE_SITE_KEY = "site-key-test";
+  delete process.env.TURNSTILE_SECRET_KEY;
+
+  assert.doesNotThrow(() => createAppServer());
+});
+
 test("server falha quando Turnstile e obrigatorio sem chaves", () => {
   process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
   process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
