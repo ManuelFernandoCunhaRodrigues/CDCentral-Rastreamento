@@ -199,7 +199,7 @@ const getCspReportUrl = (req) => getConfiguredCspReportUrl() || new URL(DEFAULT_
 
 const getCsp = (req, { reportOnly = false } = {}) => {
   const jsonLdHashDirective = getJsonLdHashDirective();
-  const scriptSrc = ["script-src 'self'", "https://challenges.cloudflare.com", jsonLdHashDirective]
+  const scriptSrc = ["script-src 'self'", jsonLdHashDirective]
     .filter(Boolean)
     .join(" ");
 
@@ -207,7 +207,7 @@ const getCsp = (req, { reportOnly = false } = {}) => {
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
-    "frame-src https://challenges.cloudflare.com",
+    "frame-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self'",
     scriptSrc,
@@ -215,7 +215,7 @@ const getCsp = (req, { reportOnly = false } = {}) => {
     "style-src 'self'",
     "font-src 'self'",
     "img-src 'self' data:",
-    "connect-src 'self' https://challenges.cloudflare.com",
+    "connect-src 'self'",
     "media-src 'none'",
     "worker-src 'none'",
     "manifest-src 'self'",

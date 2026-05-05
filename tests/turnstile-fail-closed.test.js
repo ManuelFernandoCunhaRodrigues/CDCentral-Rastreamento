@@ -84,16 +84,14 @@ test.beforeEach(() => {
   fetchCalls = 0;
 });
 
-test("public-config falha fechado quando Turnstile obrigatorio esta incompleto", async () => {
+test("public-config nao exige Turnstile quando variavel antiga esta ativa", async () => {
   const response = await request({ path: "/api/public-config" });
 
-  assert.equal(response.statusCode, 503);
-  assert.deepEqual(JSON.parse(response.body), {
-    message: "Verificacao de seguranca indisponivel.",
-  });
+  assert.equal(response.statusCode, 200);
+  assert.equal(JSON.parse(response.body).turnstileEnabled, false);
 });
 
-test("api de leads nao grava quando Turnstile obrigatorio esta incompleto", async () => {
+test("api de leads aceita envio sem token de Turnstile", async () => {
   const response = await request({
     method: "POST",
     path: "/api/leads",
@@ -113,7 +111,7 @@ test("api de leads nao grava quando Turnstile obrigatorio esta incompleto", asyn
     }),
   });
 
-  assert.equal(response.statusCode, 503);
-  assert.equal(JSON.parse(response.body).message, "Verificacao de seguranca indisponivel.");
-  assert.equal(fetchCalls, 0);
+  assert.equal(response.statusCode, 201);
+  assert.equal(JSON.parse(response.body).message, "Lead recebido com sucesso.");
+  assert.equal(fetchCalls, 1);
 });

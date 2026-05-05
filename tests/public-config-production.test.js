@@ -53,7 +53,7 @@ test("public-config ignora Turnstile parcial quando nao e obrigatorio", async ()
   assert.equal(body.turnstileSiteKey, "");
 });
 
-test("public-config habilita Turnstile em producao com configuracao completa", async () => {
+test("public-config mantem Turnstile desabilitado mesmo com configuracao completa", async () => {
   process.env.REQUIRE_TURNSTILE = "1";
   process.env.TURNSTILE_SITE_KEY = "site-key-test";
   process.env.TURNSTILE_SECRET_KEY = "secret-key-test";
@@ -63,6 +63,6 @@ test("public-config habilita Turnstile em producao com configuracao completa", a
 
   const body = JSON.parse(response.body);
   assert.equal(response.statusCode, 200);
-  assert.equal(body.turnstileEnabled, true);
-  assert.equal(body.turnstileSiteKey, "site-key-test");
+  assert.equal(body.turnstileEnabled, false);
+  assert.equal(body.turnstileSiteKey, "");
 });

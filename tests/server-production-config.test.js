@@ -44,21 +44,14 @@ test("server permite Turnstile parcial quando nao e obrigatorio", () => {
   assert.doesNotThrow(() => createAppServer());
 });
 
-test("server falha quando Turnstile e obrigatorio sem chaves", () => {
+test("server ignora exigencia antiga de Turnstile sem chaves", () => {
   process.env.UPSTASH_REDIS_REST_URL = "https://example-upstash.upstash.io";
   process.env.UPSTASH_REDIS_REST_TOKEN = "upstash-token-test";
   process.env.REQUIRE_TURNSTILE = "1";
   delete process.env.TURNSTILE_SITE_KEY;
   delete process.env.TURNSTILE_SECRET_KEY;
 
-  assert.throws(
-    () => createAppServer(),
-    (error) =>
-      error instanceof Error &&
-      /Production security config invalid/.test(error.message) &&
-      /TURNSTILE_SITE_KEY/.test(error.message) &&
-      /TURNSTILE_SECRET_KEY/.test(error.message)
-  );
+  assert.doesNotThrow(() => createAppServer());
 });
 
 test("server exige Upstash quando rate limit externo e obrigatorio", () => {

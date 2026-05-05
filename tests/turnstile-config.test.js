@@ -25,20 +25,22 @@ test("Turnstile fica desabilitado por padrao em producao", () => {
   assert.equal(isTurnstileFailClosed(config), false);
 });
 
-test("Turnstile pode ser desligado em runtime de producao", () => {
+test("Turnstile permanece desabilitado mesmo com chaves configuradas", () => {
   process.env.NODE_ENV = "production";
-  process.env.REQUIRE_TURNSTILE = "0";
+  process.env.REQUIRE_TURNSTILE = "1";
   process.env.TURNSTILE_SITE_KEY = "site-key-test";
   process.env.TURNSTILE_SECRET_KEY = "secret-key-test";
 
   const config = getTurnstileConfig();
 
-  assert.equal(config.disabledInProduction, false);
+  assert.equal(config.required, false);
+  assert.equal(config.disabledInProduction, true);
   assert.equal(config.enabled, false);
+  assert.deepEqual(config.missing, []);
   assert.equal(isTurnstileFailClosed(config), false);
 });
 
-test("Turnstile obrigatorio ainda falha fechado sem chaves", () => {
+test("Turnstile nao falha fechado quando variavel antiga exige verificacao", () => {
   process.env.NODE_ENV = "production";
   process.env.REQUIRE_TURNSTILE = "1";
   delete process.env.TURNSTILE_SITE_KEY;
@@ -46,7 +48,8 @@ test("Turnstile obrigatorio ainda falha fechado sem chaves", () => {
 
   const config = getTurnstileConfig();
 
-  assert.equal(config.required, true);
-  assert.deepEqual(config.missing, ["TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"]);
-  assert.equal(isTurnstileFailClosed(config), true);
+  assert.equal(config.required, false);
+  assert.equal(config.enabled, false);
+  assert.deepEqual(config.missing, []);
+  assert.equal(isTurnstileFailClosed(config), false);
 });

@@ -84,7 +84,7 @@ test.beforeEach(() => {
   fetchCalls = [];
 });
 
-test("rejeita Turnstile com hostname fora do allowlist", async () => {
+test("aceita lead sem validar token Turnstile", async () => {
   const response = await request({
     method: "POST",
     path: "/api/leads",
@@ -105,8 +105,8 @@ test("rejeita Turnstile com hostname fora do allowlist", async () => {
     }),
   });
 
-  assert.equal(response.statusCode, 400);
-  assert.equal(JSON.parse(response.body).message, "Verificacao de seguranca invalida.");
+  assert.equal(response.statusCode, 201);
+  assert.equal(JSON.parse(response.body).message, "Lead recebido com sucesso.");
   assert.equal(fetchCalls.length, 1);
-  assert.match(fetchCalls[0].url, /challenges\.cloudflare\.com\/turnstile\/v0\/siteverify/);
+  assert.doesNotMatch(fetchCalls[0].url, /challenges\.cloudflare\.com\/turnstile\/v0\/siteverify/);
 });
