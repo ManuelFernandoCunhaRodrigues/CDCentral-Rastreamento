@@ -12,7 +12,6 @@ const feedbackNode = document.querySelector("#form-feedback");
 const whatsappInput = document.querySelector("#whatsapp");
 const startedAtInput = document.querySelector("#started_at");
 const consentVersionInput = document.querySelector("#consent_version");
-const turnstileNode = document.querySelector("#turnstile-widget");
 const keepHeaderScrolled = document.body.classList.contains("legal-page");
 
 const DESKTOP_NAV_BREAKPOINT = 980;
@@ -22,9 +21,6 @@ const SUBMIT_LOADING_TEXT = "Enviando...";
 const GENERIC_SUBMIT_ERROR = "Não foi possível enviar agora. Tente novamente em instantes.";
 const FALLBACK_CONSENT_VERSION = "2026-04-28";
 let activeConsentVersion = String(consentVersionInput?.value || "").trim() || FALLBACK_CONSENT_VERSION;
-let turnstileWidgetId = null;
-let turnstileReady = false;
-let turnstileRequired = false;
 let publicConfigPromise = null;
 
 const fieldNodes = {
@@ -106,15 +102,6 @@ const formatWhatsapp = (value) => {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
 
-const getTurnstileToken = (formData) => {
-  const formToken = String(formData.get("cf-turnstile-response") || "").trim();
-  if (formToken || !window.turnstile || turnstileWidgetId === null) {
-    return formToken;
-  }
-
-  return String(window.turnstile.getResponse(turnstileWidgetId) || "").trim();
-};
-
 const getLeadPayload = (formData) => ({
   nome: String(formData.get("nome") || "").trim().replace(/\s+/g, " "),
   whatsapp: String(formData.get("whatsapp") || "").trim(),
@@ -124,7 +111,6 @@ const getLeadPayload = (formData) => ({
   startedAt: String(formData.get("started_at") || "").trim(),
   consent: formData.get("consent") === "true",
   consentVersion: activeConsentVersion || String(formData.get("consentVersion") || "").trim(),
-  "cf-turnstile-response": getTurnstileToken(formData),
 });
 
 const validateLeadPayload = (payload) => {
@@ -296,64 +282,12 @@ const loadPublicConfig = async () => {
   return publicConfigPromise;
 };
 
-const setTurnstileFieldVisible = (isVisible) => {
-  const field = turnstileNode?.closest(".form-field");
-  if (field) {
-    field.hidden = !isVisible;
-  }
-};
-
-const renderTurnstile = async (config) => {
-  if (!turnstileNode || turnstileWidgetId !== null) {
-    return;
-  }
-
-  turnstileRequired = Boolean(config?.turnstileEnabled && config?.turnstileSiteKey);
-
-  if (!turnstileRequired) {
-    turnstileReady = true;
-    setTurnstileFieldVisible(false);
-    return;
-  }
-
-  setTurnstileFieldVisible(true);
-
-  if (!window.turnstile) {
-    return;
-  }
-
-  turnstileWidgetId = window.turnstile.render(turnstileNode, {
-    sitekey: config.turnstileSiteKey,
-    theme: "dark",
-    callback: () => {
-      turnstileReady = true;
-      setFeedback("", "");
-    },
-    "expired-callback": () => {
-      turnstileReady = false;
-    },
-    "error-callback": () => {
-      turnstileReady = false;
-      setFeedback("Não foi possível carregar a verificação de segurança. Atualize a página e tente novamente.", "error");
-    },
-  });
-};
-
 const initializeFormConfig = async () => {
   try {
-    const config = await loadPublicConfig();
-    await renderTurnstile(config);
+    await loadPublicConfig();
   } catch (error) {
-    turnstileRequired = false;
-    turnstileReady = true;
-    setTurnstileFieldVisible(false);
+    /* fallback consent version já está em activeConsentVersion */
   }
-};
-
-window.onTurnstileLoad = () => {
-  loadPublicConfig()
-    .then((config) => renderTurnstile(config))
-    .catch(() => {});
 };
 
 const applyServerFieldErrors = (fields) => {
@@ -402,11 +336,6 @@ const handleLeadSubmit = async (event) => {
 
   await initializeFormConfig();
 
-  if (turnstileRequired && (!turnstileReady || !payload["cf-turnstile-response"])) {
-    setFeedback("Confirme a verificação de segurança para continuar.", "error");
-    return;
-  }
-
   setSubmitLoading(true);
 
   try {
@@ -430,9 +359,8 @@ const handleLeadSubmit = async (event) => {
     if (whatsappInput) {
       whatsappInput.value = "";
     }
-    if (window.turnstile && turnstileWidgetId !== null) {
-      window.turnstile.reset(turnstileWidgetId);
-      turnstileReady = false;
+    if (consentVersionInput) {
+      consentVersionInput.value = activeConsentVersion;
     }
     resetStartedAt();
   } catch (error) {

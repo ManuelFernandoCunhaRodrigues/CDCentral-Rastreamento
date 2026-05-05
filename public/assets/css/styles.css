@@ -829,14 +829,6 @@ a:focus-visible {
   margin-top: 0.35rem;
 }
 
-.form-field--turnstile {
-  min-height: 4.1rem;
-}
-
-.turnstile-widget {
-  min-height: 4.1rem;
-}
-
 .consent-field {
   display: grid;
   grid-template-columns: 1.05rem 1fr;

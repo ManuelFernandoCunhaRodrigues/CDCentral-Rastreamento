@@ -3,7 +3,6 @@
 const { getConsentVersion } = require("../lib/app-config");
 const { LeadStorageError, normalizeLead, validateLead, saveLeadToSupabase } = require("../lib/leads-service");
 const { getProductionSecurityConfigErrors } = require("../lib/production-security");
-const { getTurnstileConfig, isTurnstileFailClosed } = require("../lib/turnstile-config");
 const {
   HttpError,
   anonymizeIp,
@@ -20,8 +19,6 @@ const MIN_FORM_FILL_TIME_MS = 1500;
 const MAX_FORM_AGE_MS = 2 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 16 * 1024;
 const CONSENT_VERSION = getConsentVersion();
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-const TURNSTILE_TIMEOUT_MS = 5000;
 const GENERIC_ERROR_MESSAGE = "Nao foi possivel enviar sua solicitacao agora. Tente novamente em instantes.";
 const IS_DEPLOYED_RUNTIME = process.env.VERCEL === "1" || process.env.NODE_ENV === "production";
 const TRUST_PROXY_HEADERS = process.env.VERCEL === "1" || process.env.TRUST_PROXY_HEADERS === "1";
@@ -62,24 +59,6 @@ const normalizeOrigin = (value) => {
   } catch (error) {
     return "";
   }
-};
-
-const getCanonicalTurnstileHosts = () => {
-  const hosts = new Set();
-
-  try {
-    hosts.add(new URL(process.env.SITE_URL || "https://cdcentralrastreamento.com.br").host.toLowerCase());
-  } catch (error) {}
-
-  String(process.env.ALLOWED_ORIGINS || "")
-    .split(",")
-    .forEach((origin) => {
-      try {
-        hosts.add(new URL(origin.trim()).host.toLowerCase());
-      } catch (error) {}
-    });
-
-  return hosts;
 };
 
 const getConfiguredOrigins = () => {
@@ -178,19 +157,6 @@ const hasValidConsent = (body) => {
   return body.consent === true && String(body.consentVersion || "").trim() === CONSENT_VERSION;
 };
 
-const isTurnstileRequired = () => {
-  return getTurnstileConfig().enabled;
-};
-
-const assertTurnstileRuntimeConfig = () => {
-  const turnstileConfig = getTurnstileConfig();
-  if (isTurnstileFailClosed(turnstileConfig)) {
-    const error = new HttpError(503, "Verificacao de seguranca indisponivel.", "missing_turnstile_config");
-    error.details = turnstileConfig.missing.join(",");
-    throw error;
-  }
-};
-
 const assertProductionRuntimeConfig = () => {
   const errors = getProductionSecurityConfigErrors();
   if (errors.length > 0) {
@@ -201,58 +167,6 @@ const assertProductionRuntimeConfig = () => {
     const error = new HttpError(503, GENERIC_ERROR_MESSAGE, "production_security_config_invalid");
     error.details = errors.join("; ");
     throw error;
-  }
-};
-
-const getTurnstileToken = (body) => String(body["cf-turnstile-response"] || "").trim();
-
-const validateTurnstileToken = async (token, remoteIp) => {
-  const secretKey = process.env.TURNSTILE_SECRET_KEY || "";
-
-  if (!secretKey) {
-    throw new HttpError(500, "Turnstile nao configurado.", "missing_turnstile_secret");
-  }
-
-  if (!token) {
-    throw new HttpError(400, "Verificacao de seguranca invalida.", "missing_turnstile_token");
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TURNSTILE_TIMEOUT_MS);
-  const body = new URLSearchParams({
-    secret: secretKey,
-    response: token,
-  });
-
-  if (remoteIp && remoteIp !== "unknown") {
-    body.set("remoteip", remoteIp);
-  }
-
-  try {
-    const response = await fetch(TURNSTILE_VERIFY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: body.toString(),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      throw new HttpError(502, "Falha na verificacao de seguranca.", "turnstile_request_failed");
-    }
-
-    const result = await response.json().catch(() => ({}));
-    if (result.success !== true) {
-      throw new HttpError(400, "Verificacao de seguranca invalida.", "invalid_turnstile_token");
-    }
-
-    const hostname = String(result.hostname || "").trim().toLowerCase();
-    if (hostname && !getCanonicalTurnstileHosts().has(hostname)) {
-      throw new HttpError(400, "Verificacao de seguranca invalida.", "invalid_turnstile_hostname");
-    }
-  } finally {
-    clearTimeout(timeout);
   }
 };
 
@@ -302,7 +216,6 @@ module.exports = async (req, res) => {
   }
 
   try {
-    assertTurnstileRuntimeConfig();
     assertProductionRuntimeConfig();
 
     if (await isLeadRateLimited(clientIp)) {
@@ -348,10 +261,6 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (isTurnstileRequired()) {
-      await validateTurnstileToken(getTurnstileToken(body), clientIp);
-    }
-
     if (await isLeadContactRateLimited(lead.whatsapp)) {
       sendJson(req, res, 429, {
         message: "Muitas tentativas em sequencia. Aguarde um instante e tente novamente.",
@@ -376,8 +285,7 @@ module.exports = async (req, res) => {
       }
 
       sendJson(req, res, error.statusCode, {
-        message:
-          error.statusCode >= 500 && error.code !== "missing_turnstile_config" ? GENERIC_ERROR_MESSAGE : error.message,
+        message: error.statusCode >= 500 ? GENERIC_ERROR_MESSAGE : error.message,
       });
       return;
     }

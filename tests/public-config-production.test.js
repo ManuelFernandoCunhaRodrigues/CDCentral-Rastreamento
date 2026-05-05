@@ -3,14 +3,11 @@
 process.env.NODE_ENV = "production";
 process.env.VERCEL = "1";
 process.env.SITE_URL = "https://cdcentralrastreamento.com.br";
-delete process.env.TURNSTILE_SITE_KEY;
-delete process.env.TURNSTILE_SECRET_KEY;
 delete process.env.UPSTASH_REDIS_REST_URL;
 delete process.env.UPSTASH_REDIS_REST_TOKEN;
 delete process.env.REQUIRE_EXTERNAL_RATE_LIMIT;
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_LEADS_INSERT_KEY = "sb_secret_test_key";
-delete process.env.REQUIRE_TURNSTILE;
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
@@ -28,41 +25,22 @@ const createResponse = () => ({
   },
 });
 
-test("public-config permite producao sem Turnstile configurado", async () => {
+test("public-config retorna apenas a versao de consentimento", async () => {
   const response = createResponse();
 
   await publicConfigHandler({ method: "GET", headers: {} }, response);
 
   const body = JSON.parse(response.body);
   assert.equal(response.statusCode, 200);
-  assert.equal(body.turnstileEnabled, false);
-  assert.equal(body.turnstileSiteKey, "");
+  assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(body.consentVersion));
+  assert.equal(body.turnstileEnabled, undefined);
+  assert.equal(body.turnstileSiteKey, undefined);
 });
 
-test("public-config ignora Turnstile parcial quando nao e obrigatorio", async () => {
-  process.env.TURNSTILE_SITE_KEY = "site-key-test";
-  delete process.env.TURNSTILE_SECRET_KEY;
-  delete process.env.REQUIRE_TURNSTILE;
+test("public-config rejeita metodo nao GET", async () => {
   const response = createResponse();
 
-  await publicConfigHandler({ method: "GET", headers: {} }, response);
+  await publicConfigHandler({ method: "POST", headers: {} }, response);
 
-  const body = JSON.parse(response.body);
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.turnstileEnabled, false);
-  assert.equal(body.turnstileSiteKey, "");
-});
-
-test("public-config mantem Turnstile desabilitado mesmo com configuracao completa", async () => {
-  process.env.REQUIRE_TURNSTILE = "1";
-  process.env.TURNSTILE_SITE_KEY = "site-key-test";
-  process.env.TURNSTILE_SECRET_KEY = "secret-key-test";
-  const response = createResponse();
-
-  await publicConfigHandler({ method: "GET", headers: {} }, response);
-
-  const body = JSON.parse(response.body);
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.turnstileEnabled, false);
-  assert.equal(body.turnstileSiteKey, "");
+  assert.equal(response.statusCode, 405);
 });

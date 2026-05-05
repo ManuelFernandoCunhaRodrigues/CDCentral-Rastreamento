@@ -16,7 +16,6 @@ try {
 
 const baseUrl = String(args.url || process.env.SMOKE_DEPLOY_URL || process.env.SITE_URL || "").replace(/\/$/, "");
 const timeoutMs = Number(args.timeout || 10000);
-const expectTurnstile = args["require-turnstile"] === true;
 const checks = [];
 
 if (!baseUrl) {
@@ -93,14 +92,6 @@ const assertStatus = async (pathname, expectedStatus, label) => {
         addCheck("error", "public config", "response is not the expected JSON shape");
       } else {
         addCheck("ok", "public config", `consentVersion=${config.consentVersion}`);
-      }
-
-      if (expectTurnstile && config?.turnstileEnabled !== true) {
-        addCheck("error", "turnstile", "Turnstile is disabled in public config");
-      } else if (config?.turnstileEnabled === true) {
-        addCheck("ok", "turnstile", "Turnstile is enabled in public config");
-      } else {
-        addCheck("warn", "turnstile", "Turnstile is disabled in public config");
       }
     }
   } catch (error) {

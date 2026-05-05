@@ -23,7 +23,6 @@ const jsFiles = [
   "lib/app-config.js",
   "lib/http-utils.js",
   "lib/leads-service.js",
-  "lib/turnstile-config.js",
   "public/assets/js/script.js",
   "scripts/lib/env.js",
   "scripts/optimize-images.js",

@@ -171,28 +171,7 @@ if (isPublishedTarget && requireExternalRateLimit) {
   addWarn("upstash redis", "not configured; using in-memory rate limit fallback");
 }
 
-const requireTurnstile = String(process.env.REQUIRE_TURNSTILE || "").trim() === "1";
-const turnstileSiteKeyValue = String(process.env.TURNSTILE_SITE_KEY || "").trim();
-const turnstileSecretKeyValue = String(process.env.TURNSTILE_SECRET_KEY || "").trim();
-const hasTurnstilePartialConfig = Boolean(turnstileSiteKeyValue || turnstileSecretKeyValue);
-
-if (requireTurnstile || hasTurnstilePartialConfig) {
-  const turnstileSiteKey = requireVariable("TURNSTILE_SITE_KEY", "turnstile");
-  const turnstileSecretKey = requireVariable("TURNSTILE_SECRET_KEY", "turnstile");
-  if (turnstileSiteKey && turnstileSecretKey) {
-    addOk("turnstile", "site key and secret key are both present");
-  }
-} else {
-  addOk("turnstile", "disabled; set REQUIRE_TURNSTILE=1 with keys to enable it");
-}
-
 if (isPublishedTarget) {
-  if (requireTurnstile) {
-    addOk("turnstile", "REQUIRE_TURNSTILE=1");
-  } else {
-    addWarn("turnstile", "Turnstile is disabled in staging/production");
-  }
-
   if (requireExternalRateLimit) {
     addOk("rate limit", "external rate limit is required");
   } else {

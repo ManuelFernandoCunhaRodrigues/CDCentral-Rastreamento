@@ -2,14 +2,11 @@
 
 process.env.NODE_ENV = "test";
 process.env.CONSENT_VERSION = "2026-04-28";
-process.env.REQUIRE_TURNSTILE = "0";
 process.env.REQUIRE_EXTERNAL_RATE_LIMIT = "0";
 process.env.ALLOW_LOCAL_ORIGINS = "1";
 process.env.SUPABASE_URL = "https://example.supabase.co";
 process.env.SUPABASE_LEADS_INSERT_KEY = "sb_secret_test_key";
 process.env.SUPABASE_LEADS_TABLE = "leads";
-delete process.env.TURNSTILE_SITE_KEY;
-delete process.env.TURNSTILE_SECRET_KEY;
 
 const assert = require("node:assert/strict");
 const http = require("node:http");
@@ -110,14 +107,12 @@ test("health publico expoe somente status", async () => {
   assert.deepEqual(JSON.parse(response.body), { status: "ok" });
 });
 
-test("entrega configuracao publica sem habilitar Turnstile incompleto", async () => {
+test("entrega configuracao publica com versao de consentimento", async () => {
   const response = await request({ path: "/api/public-config" });
   assert.equal(response.statusCode, 200);
 
   const config = JSON.parse(response.body);
   assert.equal(config.consentVersion, "2026-04-28");
-  assert.equal(config.turnstileEnabled, false);
-  assert.equal(config.turnstileSiteKey, "");
 });
 
 test("valida campos obrigatorios de lead antes de gravar", async () => {
