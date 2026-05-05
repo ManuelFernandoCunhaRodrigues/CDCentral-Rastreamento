@@ -194,6 +194,10 @@ const assertTurnstileRuntimeConfig = () => {
 const assertProductionRuntimeConfig = () => {
   const errors = getProductionSecurityConfigErrors();
   if (errors.length > 0) {
+    console.error("Lead API config invalid:", {
+      code: "production_security_config_invalid",
+      errors,
+    });
     const error = new HttpError(503, GENERIC_ERROR_MESSAGE, "production_security_config_invalid");
     error.details = errors.join("; ");
     throw error;

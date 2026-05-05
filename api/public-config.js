@@ -1,10 +1,9 @@
 "use strict";
 
 const { getConsentVersion } = require("../lib/app-config");
-const { getProductionSecurityConfigErrors } = require("../lib/production-security");
 const { getTurnstileConfig, isTurnstileFailClosed } = require("../lib/turnstile-config");
 
-const GENERIC_CONFIG_ERROR = "Verificacao de seguranca indisponivel.";
+const GENERIC_CONFIG_ERROR = "Configuracao indisponivel.";
 
 const sendJson = (res, statusCode, payload) => {
   res.statusCode = statusCode;
@@ -30,18 +29,6 @@ module.exports = async (req, res) => {
     console.error("Public config unavailable:", {
       code: "missing_turnstile_config",
       missing: turnstileConfig.missing,
-    });
-    sendJson(res, 503, {
-      message: GENERIC_CONFIG_ERROR,
-    });
-    return;
-  }
-
-  const productionConfigErrors = getProductionSecurityConfigErrors();
-  if (productionConfigErrors.length > 0) {
-    console.error("Public config unavailable:", {
-      code: "production_security_config_invalid",
-      errors: productionConfigErrors,
     });
     sendJson(res, 503, {
       message: GENERIC_CONFIG_ERROR,

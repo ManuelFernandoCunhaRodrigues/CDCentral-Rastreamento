@@ -20,11 +20,11 @@ const SUBMIT_TIMEOUT_MS = 10000;
 const SUBMIT_IDLE_TEXT = "Receber orçamento";
 const SUBMIT_LOADING_TEXT = "Enviando...";
 const GENERIC_SUBMIT_ERROR = "Não foi possível enviar agora. Tente novamente em instantes.";
-let activeConsentVersion = String(consentVersionInput?.value || "").trim();
+const FALLBACK_CONSENT_VERSION = "2026-04-28";
+let activeConsentVersion = String(consentVersionInput?.value || "").trim() || FALLBACK_CONSENT_VERSION;
 let turnstileWidgetId = null;
 let turnstileReady = false;
-let turnstileRequired = Boolean(turnstileNode);
-let turnstileUnavailable = false;
+let turnstileRequired = false;
 let publicConfigPromise = null;
 
 const fieldNodes = {
@@ -276,12 +276,15 @@ const loadPublicConfig = async () => {
 
     const config = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(GENERIC_SUBMIT_ERROR);
+      throw new Error("public_config_unavailable");
     }
 
-    activeConsentVersion = String(config.consentVersion || activeConsentVersion || "").trim();
-    if (consentVersionInput && activeConsentVersion) {
-      consentVersionInput.value = activeConsentVersion;
+    const incomingVersion = String(config.consentVersion || "").trim();
+    if (incomingVersion) {
+      activeConsentVersion = incomingVersion;
+      if (consentVersionInput) {
+        consentVersionInput.value = activeConsentVersion;
+      }
     }
 
     return config;
@@ -300,51 +303,58 @@ const setTurnstileFieldVisible = (isVisible) => {
   }
 };
 
-const renderTurnstile = async () => {
+const renderTurnstile = async (config) => {
   if (!turnstileNode || turnstileWidgetId !== null) {
     return;
   }
 
+  turnstileRequired = Boolean(config?.turnstileEnabled && config?.turnstileSiteKey);
+
+  if (!turnstileRequired) {
+    turnstileReady = true;
+    setTurnstileFieldVisible(false);
+    return;
+  }
+
+  setTurnstileFieldVisible(true);
+
+  if (!window.turnstile) {
+    return;
+  }
+
+  turnstileWidgetId = window.turnstile.render(turnstileNode, {
+    sitekey: config.turnstileSiteKey,
+    theme: "dark",
+    callback: () => {
+      turnstileReady = true;
+      setFeedback("", "");
+    },
+    "expired-callback": () => {
+      turnstileReady = false;
+    },
+    "error-callback": () => {
+      turnstileReady = false;
+      setFeedback("Não foi possível carregar a verificação de segurança. Atualize a página e tente novamente.", "error");
+    },
+  });
+};
+
+const initializeFormConfig = async () => {
   try {
     const config = await loadPublicConfig();
-    turnstileUnavailable = false;
-    turnstileRequired = Boolean(config.turnstileEnabled && config.turnstileSiteKey);
-
-    if (!turnstileRequired) {
-      turnstileReady = true;
-      setTurnstileFieldVisible(false);
-      return;
-    }
-
-    setTurnstileFieldVisible(true);
-
-    if (!window.turnstile) {
-      return;
-    }
-
-    turnstileWidgetId = window.turnstile.render(turnstileNode, {
-      sitekey: config.turnstileSiteKey,
-      theme: "dark",
-      callback: () => {
-        turnstileReady = true;
-        setFeedback("", "");
-      },
-      "expired-callback": () => {
-        turnstileReady = false;
-      },
-      "error-callback": () => {
-        turnstileReady = false;
-        setFeedback("Não foi possível carregar a verificação de segurança. Atualize a página e tente novamente.", "error");
-      },
-    });
+    await renderTurnstile(config);
   } catch (error) {
-    turnstileReady = false;
-    turnstileUnavailable = true;
-    setFeedback("Não foi possível carregar a verificação de segurança. Atualize a página e tente novamente.", "error");
+    turnstileRequired = false;
+    turnstileReady = true;
+    setTurnstileFieldVisible(false);
   }
 };
 
-window.onTurnstileLoad = renderTurnstile;
+window.onTurnstileLoad = () => {
+  loadPublicConfig()
+    .then((config) => renderTurnstile(config))
+    .catch(() => {});
+};
 
 const applyServerFieldErrors = (fields) => {
   if (!Array.isArray(fields)) {
@@ -390,11 +400,7 @@ const handleLeadSubmit = async (event) => {
     return;
   }
 
-  await renderTurnstile();
-
-  if (turnstileUnavailable) {
-    return;
-  }
+  await initializeFormConfig();
 
   if (turnstileRequired && (!turnstileReady || !payload["cf-turnstile-response"])) {
     setFeedback("Confirme a verificação de segurança para continuar.", "error");
@@ -521,8 +527,5 @@ if (revealElements.length > 0) {
 
 if (leadForm) {
   leadForm.addEventListener("submit", handleLeadSubmit);
-}
-
-if (turnstileNode) {
-  renderTurnstile();
+  initializeFormConfig();
 }
