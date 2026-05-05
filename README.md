@@ -44,6 +44,7 @@ O site foi pensado para:
 |   |-- http-utils.js
 |   `-- leads-service.js
 |-- database/supabase/
+|   |-- harden-public-functions.sql
 |   `-- leads-schema.sql
 |-- public/
 |   |-- index.html
@@ -115,6 +116,9 @@ Utilitários de parsing JSON, erro HTTP controlado e rate limit com Redis/KV qua
 
 - [database/supabase/leads-schema.sql](./database/supabase/leads-schema.sql)
   Estrutura esperada da tabela de leads, com RLS ativado e constraints básicas de qualidade dos dados.
+
+- [database/supabase/harden-public-functions.sql](./database/supabase/harden-public-functions.sql)
+  Revoga execucao publica de funcoes `SECURITY DEFINER` em `public` e fixa `search_path` de funcao interna de notificacao.
 
 ## Seções da landing page
 
@@ -440,11 +444,14 @@ Pontos importantes na publicação:
 - mantenha `REQUIRE_TURNSTILE=0` se o formulario deve funcionar sem anti-spam; se ativar `REQUIRE_TURNSTILE=1`, configure `TURNSTILE_SITE_KEY` e `TURNSTILE_SECRET_KEY`;
 - se quiser rate limit distribuido, configure `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`; caso contrario, mantenha `REQUIRE_EXTERNAL_RATE_LIMIT=0`;
 - aplicar [database/supabase/leads-schema.sql](./database/supabase/leads-schema.sql) e validar se a tabela aceita os campos esperados;
+- aplicar [database/supabase/harden-public-functions.sql](./database/supabase/harden-public-functions.sql) se existirem funcoes `SECURITY DEFINER` internas em `public` apontadas pelos advisors do Supabase;
 - rodar `node scripts/validate-runtime-env.js`, `node scripts/smoke-supabase-lead.js` e `node scripts/smoke-deploy.js` para fechar a validacao do ambiente real.
 
 ### Estratégia Supabase/RLS
 
 O schema deixa `public.leads` com RLS ativo e sem permissões para `anon`/`authenticated`. Isso é intencional: o navegador nunca grava diretamente na tabela. A rota `/api/leads` é o único ponto de entrada, aplicando validações, Turnstile opcional e rate limit antes de usar `SUPABASE_LEADS_INSERT_KEY`. O nome `SUPABASE_SERVICE_ROLE_KEY` nao e aceito como fallback.
+
+Depois de aplicar o schema, rode os advisors de seguranca do Supabase. Se houver funcoes internas `SECURITY DEFINER` em `public` com `EXECUTE` para `anon`, `authenticated` ou `public`, aplique [database/supabase/harden-public-functions.sql](./database/supabase/harden-public-functions.sql). Isso mantem triggers/event triggers internos funcionando, mas remove a chamada direta via Data API.
 
 ## Testes manuais de segurança
 
